@@ -233,8 +233,8 @@ h3 {
 
 h1 {
   margin-bottom: 20px;
-  font-size: clamp(2.75rem, 6vw, 4.9rem);
-  line-height: 1.08;
+  font-size: 48px;
+  line-height: 1.2;
 }
 
 h2 {
@@ -548,6 +548,10 @@ li {
     padding: 24px;
   }
 
+  h1 {
+    font-size: 36px;
+  }
+
   .about-grid {
     align-items: flex-start;
   }
@@ -572,6 +576,10 @@ li {
 
   .hero-grid {
     padding: 72px 0;
+  }
+
+  h1 {
+    font-size: 28px;
   }
 
   .button,
