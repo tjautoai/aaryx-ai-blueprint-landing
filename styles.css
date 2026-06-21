@@ -22,10 +22,129 @@ html {
   scroll-behavior: smooth;
 }
 
+/* FONT SYSTEM - DO NOT OVERRIDE ANYWHERE */
+
+/* Space Mono: headlines and labels only */
+h1, h2, h3 {
+  font-family: 'Space Mono', monospace !important;
+  font-weight: 700 !important;
+}
+
+.eyebrow,
+.section-label,
+.tag,
+[class*="eyebrow"],
+[class*="label"] {
+  font-family: 'Space Mono', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+.cta-btn,
+button,
+.btn,
+nav a.cta {
+  font-family: 'Space Mono', monospace !important;
+  text-transform: uppercase !important;
+}
+
+/* Inter: EVERYTHING else */
+body,
+p,
+li,
+a,
+span,
+td,
+th,
+input,
+textarea,
+.card,
+.card *,
+.service-card,
+.service-card *,
+.pain-card,
+.pain-card *,
+nav a:not(.cta),
+.nav-link,
+.price,
+.description,
+.bio,
+.faq *,
+.footer * {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* Card headers specifically. Inter NOT Space Mono */
+.card h3,
+.card h4,
+.service-card h3,
+.service-card h4,
+.pain-card h3,
+.pain-card h4,
+[class*="card"] h3,
+[class*="card"] h4 {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.service-card,
+#services .card,
+[class*="service"] .card {
+  background-color: #0d0d0d !important;
+}
+
+.service-card h3,
+.service-card h4,
+#services .card h3,
+#services .card h4 {
+  color: #ffffff !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.service-card .price,
+#services .price {
+  color: #3B6AF5 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+.service-card p,
+.service-card .description,
+#services .card p {
+  color: #cccccc !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 400 !important;
+}
+
+.service-card .service-price {
+  color: #3B6AF5 !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+.hero,
+.hero h1,
+.hero h2,
+.hero h3,
+.hero p,
+.hero li,
+.hero a,
+.final-cta,
+.final-cta h1,
+.final-cta h2,
+.final-cta h3,
+.final-cta p,
+.final-cta a,
+.final-cta li,
+.hero-visual-panel,
+.hero-visual-panel * {
+  color: #ffffff;
+}
+
 body {
   margin: 0;
-  font-family: "Inter", system-ui, sans-serif;
-  color: var(--text);
+color: var(--text);
   background: var(--bg-white);
   line-height: 1.6;
 }
@@ -89,8 +208,7 @@ a {
 }
 
 .brand {
-  font-family: "Space Mono", monospace;
-  font-size: 1.1rem;
+font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -110,8 +228,7 @@ a {
 }
 
 .site-nav a {
-  font-family: "Inter", system-ui, sans-serif;
-  font-weight: 500;
+font-weight: 500;
   color: #111111;
   transition: color 0.2s ease;
 }
@@ -153,8 +270,7 @@ a {
   border-radius: 999px;
   background: #3B6AF5;
   color: #ffffff;
-  font-family: "Space Mono", monospace;
-  font-size: 0.92rem;
+font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -195,7 +311,6 @@ a {
 .section-tag,
 .svg-terminal,
 .svg-label {
-  font-family: "Space Mono", monospace;
 }
 
 .eyebrow,
@@ -219,8 +334,7 @@ h1,
 h2,
 h3 {
   margin-top: 0;
-  font-family: "Space Mono", monospace;
-  font-weight: 700;
+font-weight: 700;
   color: #111111;
 }
 
@@ -253,7 +367,6 @@ p,
 li {
   margin-top: 0;
   color: #111111;
-  font-family: "Inter", system-ui, sans-serif;
 }
 
 .hero p,
@@ -377,8 +490,7 @@ li {
 .pain-card h3,
 .who-panel h2,
 .service-card h3 {
-  font-family: "Inter", system-ui, sans-serif;
-  font-weight: 600;
+font-weight: 600;
   color: #111111;
 }
 
@@ -388,8 +500,7 @@ li {
 .who-panel li,
 .service-card p,
 .offer-list li {
-  font-family: "Inter", system-ui, sans-serif;
-  font-weight: 400;
+font-weight: 400;
   color: #111111;
 }
 
@@ -413,8 +524,7 @@ li {
 
 .step-number {
   margin-bottom: 18px;
-  font-family: "Space Mono", monospace;
-  font-size: clamp(2rem, 4vw, 3rem);
+font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   color: #3B6AF5;
   line-height: 1;
@@ -460,8 +570,7 @@ li {
 
 .service-price {
   margin-bottom: 12px;
-  font-family: "Inter", system-ui, sans-serif;
-  font-weight: 400;
+font-weight: 400;
   letter-spacing: 0;
 }
 
@@ -485,8 +594,7 @@ li {
 
 .about-title {
   color: #3B6AF5;
-  font-family: "Space Mono", monospace;
-  font-weight: 700;
+font-weight: 700;
   letter-spacing: 0.04em;
 }
 
