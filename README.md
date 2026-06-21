@@ -71,6 +71,7 @@ http://localhost:8000
 2. Add an approved Open Graph image if desired.
 3. Replace the founder text block placeholder with an approved headshot if desired.
 4. Add real case study and testimonial proof when available.
+5. Swap the temporary Vercel alias for `https://aaryxai.com/` once the custom domain is connected and live.
 
 ## GitHub and Vercel Notes
 
