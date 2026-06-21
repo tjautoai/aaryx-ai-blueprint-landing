@@ -374,6 +374,25 @@ li {
   font-size: 1.05rem;
 }
 
+.pain-card h3,
+.who-panel h2,
+.service-card h3 {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 600;
+  color: #111111;
+}
+
+.pain-card p,
+.step-card p,
+.who-panel p,
+.who-panel li,
+.service-card p,
+.offer-list li {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 400;
+  color: #111111;
+}
+
 .offer-list li::before {
   content: "✓";
   position: absolute;
@@ -436,14 +455,14 @@ li {
 
 .service-card h3,
 .service-card p {
-  color: #ffffff;
+  color: #111111;
 }
 
 .service-price {
   margin-bottom: 12px;
-  font-family: "Space Mono", monospace;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .about-grid {
