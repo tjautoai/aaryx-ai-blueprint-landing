@@ -11,44 +11,22 @@ Conversion-focused static landing page for **one audience**, **one offer**, and 
 
 - `index.html`
 - `styles.css`
+- `assets/aaryxai_logo.jpg`
+- `assets/aaryxai_cover.jpg`
+- `assets/tejas-headshot.png`
 
-## Strategy Summary
+## Design Direction Applied
 
-### Page goal
-Get qualified visitors to click through to the AI Blueprint Tally form.
+This redesign follows the real AARYX AI assets, not the older generic navy SaaS look.
 
-### Target visitor
-Small business owners and service professionals who know they need AI help but do not know what to automate first.
-
-### Core promise
-Get a free personalized AI Blueprint that shows the 3 highest-ROI automations for your business.
-
-### Primary offer
-Free AI Blueprint Audit.
-
-### Primary CTA
-Get My AI Blueprint.
-
-### Main objections handled
-- "I do not know where to start with AI."
-- "This is probably a sales call in disguise."
-- "I am not technical enough for this."
-- "I do not want another generic AI recommendation list."
-
-### Proof used
-- Trackt MVP built
-- Automated ebook workflow built
-- Family Calendar app deployed
-- 25+ years of operations experience
-
-### Honest proof gaps still to add
-- First paid AI services client case study
-- One testimonial
-- One short workflow demo or screen recording
-- Approved founder headshot if desired
-
-### Design direction
-Sharp, modern, systems-oriented, slightly futuristic. Deep navy base with electric blue accents. Premium without looking like a generic SaaS template.
+- Dominant style family: editorial-tech / boutique operator
+- Palette: ink black, white, warm off-white, graphite neutrals, electric blue accent
+- Hero posture: dark, high-contrast, premium, restrained
+- Body posture: bright, spacious, trust-heavy
+- Typography: clean sans, strong hierarchy, generous spacing
+- Logo: real image in the header
+- Cover image: real hero visual
+- Founder image: wired to the provided file in the founder section
 
 ## Local Preview
 
@@ -68,20 +46,16 @@ http://localhost:8000
 
 1. Replace the final CTA URL in `index.html`:
    - Current placeholder: `https://tally.so/r/REPLACE-ME`
-2. Add an approved Open Graph image if desired.
-3. Replace the founder text block placeholder with an approved headshot if desired.
-4. Add real case study and testimonial proof when available.
-5. Swap the temporary Vercel alias for `https://aaryxai.com/` once the custom domain is connected and live.
+2. Add an approved Open Graph image if you want a custom social preview beyond the current cover asset.
+3. Add real case study and testimonial proof when available.
+4. Swap the temporary Vercel alias for `https://aaryxai.com/` once the custom domain is connected and live.
+5. Replace `assets/tejas-headshot.png` with the final founder headshot export if needed. The current provided source file is a fully transparent PNG payload, so it is wired into the page but does not render visible photo content.
 
-## GitHub and Vercel Notes
+## Notes on Assets
 
-This is a static site and is Vercel-ready as-is.
-
-Recommended repo name:
-
-```text
-aaryx-ai-blueprint-landing
-```
+- `aaryxai_logo.jpg` is the actual header logo used on-page.
+- `aaryxai_cover.jpg` is the actual hero visual used on-page.
+- `tejas-headshot.png` came from the provided `~/AARYX/assets/tejas-headshot.jpg` source file. The source file is actually PNG data and currently fully transparent.
 
 ## Suggested Tally Intake Questions
 
