@@ -611,6 +611,37 @@ p {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.who-for-closer {
+  max-width: 820px;
+  margin: 56px auto 0;
+  text-align: center;
+}
+
+.who-for-closer-lead,
+.who-for-closer-headline,
+.who-for-closer-copy {
+  margin-bottom: 0;
+}
+
+.who-for-closer-lead {
+  font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+  line-height: 1.5;
+}
+
+.who-for-closer-headline {
+  margin-top: 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(1.5rem, 2.8vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.who-for-closer-copy {
+  margin-top: 16px;
+  color: var(--light-muted);
+  font-size: 1rem;
+}
+
 .process-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
