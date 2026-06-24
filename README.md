@@ -1,34 +1,21 @@
-# AARYX AI Blueprint Landing Page
+# Aaryx AI Revenue Protection Landing Page
 
-Conversion-focused static landing page for **one audience**, **one offer**, and **one CTA**.
+Conversion-focused static landing page for one primary goal.
 
-- Audience: Small business owners and service professionals drowning in manual work
-- Offer: Free AI Blueprint Audit
-- CTA: Get My AI Blueprint
-- Goal: Capture email through a Tally form
+- Audience: owner-led service businesses with 5 to 50 people
+- Goal: AI Blueprint submissions
+- Core positioning: revenue protection and relationship intelligence
+- Primary CTA: Get My AI Blueprint
 
 ## Files
 
 - `index.html`
 - `styles.css`
-- `assets/aaryxai_logo.jpg`
-- `assets/aaryxai_cover.jpg`
-- `assets/tejas-headshot.png`
+- `privacy.html`
+- `terms.html`
+- `assets/` optional existing brand files retained in repo
 
-## Design Direction Applied
-
-This redesign follows the real AARYX AI assets, not the older generic navy SaaS look.
-
-- Dominant style family: editorial-tech / boutique operator
-- Palette: ink black, white, warm off-white, graphite neutrals, electric blue accent
-- Hero posture: dark, high-contrast, premium, restrained
-- Body posture: bright, spacious, trust-heavy
-- Typography: clean sans, strong hierarchy, generous spacing
-- Logo: real image in the header
-- Cover image: real hero visual
-- Founder image: wired to the provided file in the founder section
-
-## Local Preview
+## Local preview
 
 From this folder:
 
@@ -36,35 +23,22 @@ From this folder:
 python3 -m http.server 8000
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:8000
 ```
 
-## Placeholder Replacements Required Before Launch
+## Placeholder replacements before production
 
-1. Replace the final CTA URL in `index.html`:
-   - Current placeholder: `https://tally.so/r/REPLACE-ME`
-2. Add an approved Open Graph image if you want a custom social preview beyond the current cover asset.
-3. Add real case study and testimonial proof when available.
-4. Swap the temporary Vercel alias for `https://aaryxai.com/` once the custom domain is connected and live.
-5. Replace `assets/tejas-headshot.png` with the final founder headshot export if needed. The current provided source file is a fully transparent PNG payload, so it is wired into the page but does not render visible photo content.
+1. Replace every `https://tally.so/r/PLACEHOLDER` link with the real AI Blueprint Tally URL.
+2. Replace the AX placeholder mark with the final Aaryx AI SVG or approved logo asset.
+3. Replace `privacy.html` and `terms.html` placeholder copy with final legal text.
+4. Add real early-access proof once available. Do not convert placeholders into implied proof.
+5. Review whether `https://aaryxai.com` should remain in the footer before the production domain is live.
 
-## Notes on Assets
+## Notes
 
-- `aaryxai_logo.jpg` is the actual header logo used on-page.
-- `aaryxai_cover.jpg` is the actual hero visual used on-page.
-- `tejas-headshot.png` came from the provided `~/AARYX/assets/tejas-headshot.jpg` source file. The source file is actually PNG data and currently fully transparent.
-
-## Suggested Tally Intake Questions
-
-1. What type of business do you run?
-2. How many people are on your team?
-3. What tasks eat the most time each week?
-4. Which tools do you rely on today?
-5. How are leads or client follow-ups handled now?
-6. What is the biggest operational headache in the business right now?
-7. What monthly revenue range best describes the business?
-
-Capture email at the end.
+- The page intentionally avoids fake testimonials, fake logos, and invented results.
+- Trackt is positioned as a product path, not the primary conversion goal.
+- The DFY offer stays secondary to the AI Blueprint CTA.
