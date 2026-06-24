@@ -31,9 +31,9 @@ http://localhost:8000
 
 ## Placeholder replacements before production
 
-1. Replace every `https://tally.so/r/PLACEHOLDER` link with the real AI Blueprint Tally URL.
+1. Keep every `href="#"` AI Blueprint CTA pointed to the live Tally form once it is approved.
 2. Replace the AX placeholder mark with the final Aaryx AI SVG or approved logo asset.
-3. Replace `privacy.html` and `terms.html` placeholder copy with final legal text.
+3. Review privacy and terms copy with legal counsel before routing traffic to the production domain.
 4. Add real early-access proof once available. Do not convert placeholders into implied proof.
 5. Review whether `https://aaryxai.com` should remain in the footer before the production domain is live.
 
