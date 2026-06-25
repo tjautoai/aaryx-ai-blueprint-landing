@@ -142,11 +142,11 @@ p {
 
 .brand-logo {
   display: block;
-  height: 36px;
+  height: 48px;
+  max-height: 48px;
   width: auto;
   object-fit: contain;
   object-position: left center;
-  transform: translateX(-16px);
 }
 
 .brand-mark {
@@ -880,11 +880,11 @@ details p {
 
 .footer-logo {
   display: block;
-  height: 32px;
+  height: 36px;
+  max-height: 36px;
   width: auto;
   object-fit: contain;
   object-position: left center;
-  transform: translateX(-14px);
 }
 
 .footer-brand-copy {
@@ -987,7 +987,7 @@ details p {
 
   .brand-logo {
     height: 30px;
-    transform: translateX(-13px);
+    max-height: 30px;
   }
 
   .section {
