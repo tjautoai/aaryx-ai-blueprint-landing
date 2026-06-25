@@ -619,11 +619,11 @@ p {
 }
 
 .offer-card-trackt {
-  background: linear-gradient(180deg, rgba(12, 68, 124, 0.32), rgba(17, 17, 17, 0.92));
+  background: linear-gradient(180deg, rgba(0, 212, 200, 0.16), rgba(10, 14, 26, 0.96));
 }
 
 .offer-card-dfy {
-  background: linear-gradient(180deg, rgba(59, 106, 245, 0.22), rgba(17, 17, 17, 0.92));
+  background: linear-gradient(180deg, rgba(59, 106, 245, 0.22), rgba(10, 14, 26, 0.96));
 }
 
 .offer-card ul {
@@ -633,6 +633,19 @@ p {
 
 .offer-card li + li {
   margin-top: 10px;
+}
+
+.offer-brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  margin-bottom: 18px;
+}
+
+.offer-brand-logo {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
 }
 
 .price {
