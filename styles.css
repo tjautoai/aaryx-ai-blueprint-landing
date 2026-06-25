@@ -221,7 +221,7 @@ p {
 }
 
 .site-nav-links a {
-  color: var(--muted);
+  color: var(--white);
   font-family: 'Space Mono', monospace;
   font-size: 0.86rem;
   letter-spacing: 0.08em;
@@ -231,7 +231,7 @@ p {
 
 .site-nav-links a:hover,
 .site-nav-links a[aria-current='page'] {
-  color: var(--white);
+  color: var(--primary);
 }
 
 .hero {
