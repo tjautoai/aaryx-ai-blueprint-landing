@@ -140,6 +140,15 @@ p {
   gap: 14px;
 }
 
+.brand-logo {
+  display: block;
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  object-position: left center;
+  transform: translateX(-16px);
+}
+
 .brand-mark {
   width: 46px;
   height: 46px;
@@ -869,6 +878,20 @@ details p {
   gap: 14px;
 }
 
+.footer-logo {
+  display: block;
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  object-position: left center;
+  transform: translateX(-14px);
+}
+
+.footer-brand-copy {
+  display: flex;
+  align-items: center;
+}
+
 .footer-brand p,
 .footer-nav a,
 .footer-meta p,
@@ -960,6 +983,11 @@ details p {
 
   .site-nav-links a {
     font-size: 0.74rem;
+  }
+
+  .brand-logo {
+    height: 30px;
+    transform: translateX(-13px);
   }
 
   .section {
