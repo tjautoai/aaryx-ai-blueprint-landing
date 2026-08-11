@@ -979,6 +979,8 @@ details p {
 
   .nav-wrap {
     min-height: 74px;
+    flex-wrap: wrap;
+    align-items: flex-start;
   }
 
   .button-nav {
@@ -986,12 +988,22 @@ details p {
   }
 
   .site-nav {
-    flex: 1;
-    justify-content: flex-end;
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .site-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .site-nav-links {
     gap: 12px;
+    min-width: max-content;
+    padding-bottom: 2px;
   }
 
   .site-nav-links a {
