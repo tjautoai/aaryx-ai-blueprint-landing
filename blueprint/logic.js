@@ -1,48 +1,40 @@
-import { STORAGE_KEYS, branchFamilies, ctaRoutes, getBranchQuestions, questionBank, universalQuestions } from './data.js';
+import {
+  ASSESSMENT_VERSION,
+  BREAKDOWN_LIBRARY,
+  CONFLICT_FLAG_LABELS,
+  CTA_ROUTES,
+  PRIMARY_PROBLEM_CLASS_LABELS,
+  QUESTION_MAP,
+  QUESTIONS,
+  ROUTE_LABELS,
+  ROUTE_REASON_CODE_LABELS,
+  STORAGE_KEYS,
+} from './data.js';
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+const round = (value) => Math.round(value);
+const normalize = (value, min = 0, max = 100) => clamp(round(value), min, max);
 
-const normalize = (value) => clamp(Math.round(value));
-
-function getQuestionById(id, branchKey, trustSensitiveOverride = false) {
-  const branchQuestions = getBranchQuestions(branchKey, trustSensitiveOverride);
-  return [...universalQuestions, ...branchQuestions].find((question) => question.id === id);
+function getQuestion(questionId) {
+  return QUESTION_MAP[questionId] || null;
 }
 
-function getOption(question, value) {
-  return question?.options.find((option) => option.value === value) || null;
+function getOption(questionId, answerValue) {
+  const question = getQuestion(questionId);
+  return question?.options.find((option) => option.value === answerValue) || null;
 }
 
-function applyEffects(totals, effects = {}) {
-  Object.entries(effects).forEach(([key, value]) => {
-    totals[key] = (totals[key] || 0) + value;
-  });
+export function labelFor(questionId, answerValue) {
+  return getOption(questionId, answerValue)?.label || '';
 }
 
-function emptyTotals() {
-  return {
-    severity: 0,
-    communication: 0,
-    maturity: 0,
-    urgency: 0,
-    readiness: 0,
-    breadth: 0,
-    trust: 0,
-    lowMaturity: 0,
-    confidence: 0,
-  };
-}
-
-function collectBreakdownCounts(questions, answers) {
+function collectBreakdownCounts(answers) {
   const counts = new Map();
 
-  questions.forEach((question) => {
-    const answer = answers[question.id];
-    if (!answer) return;
-    const selected = getOption(question, answer);
-    if (!selected) return;
-
-    (selected.breakdownTags || []).forEach((tag) => {
+  QUESTIONS.forEach((question) => {
+    const option = getOption(question.id, answers[question.id]);
+    if (!option) return;
+    (option.breakdownTags || []).forEach((tag) => {
       counts.set(tag, (counts.get(tag) || 0) + 1);
     });
   });
@@ -50,467 +42,689 @@ function collectBreakdownCounts(questions, answers) {
   return counts;
 }
 
-function provisionalQuestions() {
-  return universalQuestions;
+function topBreakdowns(answers) {
+  const counts = collectBreakdownCounts(answers);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([tag]) => BREAKDOWN_LIBRARY[tag] || { title: tag, summary: tag });
 }
 
-function mapProvisionalScores(answers) {
-  const totals = emptyTotals();
-  const questions = provisionalQuestions();
-  questions.forEach((question) => {
-    const selected = getOption(question, answers[question.id]);
-    if (selected) applyEffects(totals, selected.effects);
-  });
-
-  const communicationDominance = normalize(28 + totals.communication - totals.breadth * 0.15 + totals.confidence * 0.1);
-  const operationalMaturity = normalize(26 + totals.maturity - totals.lowMaturity * 0.45 - totals.breadth * 0.08);
-  const breakdownSeverity = normalize(24 + totals.severity + totals.breadth * 0.18 + totals.communication * 0.08);
-  const urgencyReadiness = normalize(20 + totals.urgency + totals.readiness * 0.45 + totals.severity * 0.05);
-  const trustSensitive = totals.trust >= 14 && (answers.q4 === 'client-trust' || answers.q4 === 'referral-partner-confidence');
-  const lowMaturity = totals.lowMaturity >= 18 || answers.q5 === 'memory-inbox-habits' || answers.q5 === 'mixed-tools-no-center';
-
+function q2ComplexityBonus(value) {
   return {
-    totals,
-    communicationDominance,
-    operationalMaturity,
-    breakdownSeverity,
-    urgencyReadiness,
-    lowMaturity,
-    trustSensitive,
-  };
+    just_me: 0,
+    two_to_three: 2,
+    four_to_seven: 4,
+    eight_to_fifteen: 6,
+    sixteen_plus: 8,
+  }[value] ?? 0;
 }
 
-export function selectBranchFamily(answers) {
-  const provisional = mapProvisionalScores(answers);
-  const communicationSignal = provisional.communicationDominance;
-  const operationalSignal = normalize(22 + provisional.totals.breadth + provisional.totals.lowMaturity * 0.45 + (answers.q3 === 'handoffs-ownership-gaps' ? 18 : 0));
-  const mixedSignal = normalize(24 + (answers.q3 === 'do-not-know-what-first' ? 18 : 0) + (answers.q6 === 'wasting-time-root-problem' ? 10 : 0));
-
-  if (provisional.lowMaturity || provisional.trustSensitive) {
-    return { branchKey: 'D', provisional, reasons: ['low-maturity-or-trust-sensitive'] };
-  }
-
-  if (
-    communicationSignal >= 62 &&
-    (answers.q3 === 'missed-follow-up' || answers.q3 === 'buried-commitments') &&
-    (answers.q6 === 'deals-revenue-slip' || answers.q6 === 'clients-partners-neglected')
-  ) {
-    return { branchKey: 'B', provisional, reasons: ['communication-risk-dominant'] };
-  }
-
-  if (
-    operationalSignal >= 62 &&
-    (answers.q3 === 'handoffs-ownership-gaps' || answers.q6 === 'team-dependent-on-me' || answers.q6 === 'more-chaos-as-volume-grows')
-  ) {
-    return { branchKey: 'C', provisional, reasons: ['operational-fragility-dominant'] };
-  }
-
+function q3SeverityBase(value) {
   return {
-    branchKey: mixedSignal > 34 ? 'A' : 'A',
-    provisional,
-    reasons: ['mixed-or-unclear'],
-  };
+    missed_follow_up: 12,
+    buried_commitments_or_unanswered_questions: 14,
+    handoffs_or_ownership_gaps: 14,
+    too_much_manual_checking_and_chasing: 10,
+    we_need_a_better_system_but_do_not_know_what_first: 8,
+  }[value] ?? 0;
 }
 
-function scoreFinal(questions, answers) {
-  const totals = emptyTotals();
-  questions.forEach((question) => {
-    const selected = getOption(question, answers[question.id]);
-    if (selected) applyEffects(totals, selected.effects);
-  });
+function q4SeverityBase(value) {
+  return {
+    revenue_or_conversion: 24,
+    client_trust: 22,
+    referral_or_partner_confidence: 20,
+    team_time_and_cleanup_work: 14,
+    personal_stress_and_lost_focus: 10,
+  }[value] ?? 0;
+}
 
-  const breakdownSeverity = normalize(22 + totals.severity * 0.48 + totals.breadth * 0.08 + totals.urgency * 0.05);
-  const communicationRisk = normalize(16 + totals.communication * 0.45 - totals.breadth * 0.12 + totals.confidence * 0.15);
-  const operationalMaturity = normalize(30 + totals.maturity * 0.75 - totals.lowMaturity * 0.5 - totals.breadth * 0.06);
-  const urgencyReadiness = normalize(12 + totals.urgency * 0.55 + totals.readiness * 0.55 + totals.severity * 0.06 - totals.trust * 0.1);
-  const breadthScore = normalize(14 + totals.breadth * 0.62 + totals.lowMaturity * 0.22);
-  const routeConfidence = normalize(
-    18 +
-      totals.confidence * 0.7 +
-      (Math.abs(communicationRisk - breadthScore) >= 20 ? 8 : 0) +
-      (urgencyReadiness >= 55 ? 8 : 0) +
-      (operationalMaturity >= 34 ? 6 : 0)
+function q6SeverityBase(value) {
+  return {
+    deals_or_revenue_slipping_quietly: 26,
+    clients_or_partners_feeling_neglected: 24,
+    team_staying_dependent_on_me: 18,
+    more_chaos_as_volume_grows: 18,
+    wasting_more_time_without_fixing_root_problem: 14,
+  }[value] ?? 0;
+}
+
+function q3CommunicationSignal(value) {
+  return {
+    missed_follow_up: 20,
+    buried_commitments_or_unanswered_questions: 20,
+    handoffs_or_ownership_gaps: 2,
+    too_much_manual_checking_and_chasing: 8,
+    we_need_a_better_system_but_do_not_know_what_first: 0,
+  }[value] ?? 0;
+}
+
+function q4CommunicationSignal(value) {
+  return {
+    revenue_or_conversion: 10,
+    client_trust: 10,
+    referral_or_partner_confidence: 10,
+    team_time_and_cleanup_work: 2,
+    personal_stress_and_lost_focus: 0,
+  }[value] ?? 0;
+}
+
+function q5CommunicationSignal(value) {
+  return {
+    mostly_memory_and_inbox_habits: 10,
+    crm_plus_manual_reminders: 15,
+    task_system_plus_manual_checking: 12,
+    sops_plus_people_discipline: 2,
+    mixed_tools_with_no_trusted_center: 6,
+  }[value] ?? 0;
+}
+
+function q6CommunicationSignal(value) {
+  return {
+    deals_or_revenue_slipping_quietly: 10,
+    clients_or_partners_feeling_neglected: 10,
+    team_staying_dependent_on_me: 2,
+    more_chaos_as_volume_grows: 2,
+    wasting_more_time_without_fixing_root_problem: 2,
+  }[value] ?? 0;
+}
+
+function q7CommunicationSignal(value) {
+  return {
+    mostly_communication_follow_through: 20,
+    communication_plus_a_few_adjacent_issues: 14,
+    several_workflows_are_involved: 4,
+    broad_operating_layer_fragility: 0,
+    not_sure_of_full_scope_yet: 2,
+  }[value] ?? 0;
+}
+
+function q8CommunicationSignal(value) {
+  return {
+    that_would_solve_the_sharpest_part: 25,
+    it_would_solve_most_of_it: 22,
+    it_would_solve_one_important_part_not_all: 10,
+    it_would_help_but_bigger_issue_is_broader: 0,
+    it_is_not_the_main_issue: 0,
+  }[value] ?? 0;
+}
+
+function q5MaturitySignal(value) {
+  return {
+    mostly_memory_and_inbox_habits: 8,
+    crm_plus_manual_reminders: 22,
+    task_system_plus_manual_checking: 20,
+    sops_plus_people_discipline: 32,
+    mixed_tools_with_no_trusted_center: 8,
+  }[value] ?? 0;
+}
+
+function q7MaturitySignal(value) {
+  return {
+    mostly_communication_follow_through: 10,
+    communication_plus_a_few_adjacent_issues: 8,
+    several_workflows_are_involved: 6,
+    broad_operating_layer_fragility: 4,
+    not_sure_of_full_scope_yet: 4,
+  }[value] ?? 0;
+}
+
+function q9MaturitySignal(value) {
+  return {
+    very_reliable: 45,
+    reliable_but_inconsistent_in_practice: 38,
+    partly_reliable: 26,
+    loose_and_person_dependent: 10,
+    mostly_undocumented_or_improvised: 0,
+  }[value] ?? 0;
+}
+
+function q9LowMaturitySignal(value) {
+  return {
+    very_reliable: 0,
+    reliable_but_inconsistent_in_practice: 6,
+    partly_reliable: 16,
+    loose_and_person_dependent: 30,
+    mostly_undocumented_or_improvised: 42,
+  }[value] ?? 0;
+}
+
+function q5LowMaturitySignal(value) {
+  return {
+    mostly_memory_and_inbox_habits: 24,
+    crm_plus_manual_reminders: 4,
+    task_system_plus_manual_checking: 8,
+    sops_plus_people_discipline: 0,
+    mixed_tools_with_no_trusted_center: 22,
+  }[value] ?? 0;
+}
+
+function q6UrgencySignal(value) {
+  return {
+    deals_or_revenue_slipping_quietly: 44,
+    clients_or_partners_feeling_neglected: 40,
+    team_staying_dependent_on_me: 28,
+    more_chaos_as_volume_grows: 32,
+    wasting_more_time_without_fixing_root_problem: 20,
+  }[value] ?? 0;
+}
+
+function q4UrgencySignal(value) {
+  return {
+    revenue_or_conversion: 30,
+    client_trust: 26,
+    referral_or_partner_confidence: 22,
+    team_time_and_cleanup_work: 16,
+    personal_stress_and_lost_focus: 12,
+  }[value] ?? 0;
+}
+
+function q7BroadSignal(value) {
+  return {
+    mostly_communication_follow_through: 0,
+    communication_plus_a_few_adjacent_issues: 10,
+    several_workflows_are_involved: 22,
+    broad_operating_layer_fragility: 30,
+    not_sure_of_full_scope_yet: 16,
+  }[value] ?? 0;
+}
+
+function q8BroadSignal(value) {
+  return {
+    that_would_solve_the_sharpest_part: 0,
+    it_would_solve_most_of_it: 0,
+    it_would_solve_one_important_part_not_all: 10,
+    it_would_help_but_bigger_issue_is_broader: 22,
+    it_is_not_the_main_issue: 28,
+  }[value] ?? 0;
+}
+
+function q3BroadSignal(value) {
+  return {
+    missed_follow_up: 0,
+    buried_commitments_or_unanswered_questions: 2,
+    handoffs_or_ownership_gaps: 22,
+    too_much_manual_checking_and_chasing: 18,
+    we_need_a_better_system_but_do_not_know_what_first: 12,
+  }[value] ?? 0;
+}
+
+function q6BroadSignal(value) {
+  return {
+    deals_or_revenue_slipping_quietly: 2,
+    clients_or_partners_feeling_neglected: 2,
+    team_staying_dependent_on_me: 18,
+    more_chaos_as_volume_grows: 22,
+    wasting_more_time_without_fixing_root_problem: 8,
+  }[value] ?? 0;
+}
+
+function q4ReasonCodes(value) {
+  if (value === 'revenue_or_conversion') return ['consequence_revenue_risk'];
+  if (value === 'client_trust' || value === 'referral_or_partner_confidence') return ['consequence_relationship_risk'];
+  return [];
+}
+
+function q6ReasonCodes(value) {
+  if (value === 'team_staying_dependent_on_me' || value === 'more_chaos_as_volume_grows') return ['consequence_owner_dependency'];
+  return [];
+}
+
+function confidenceBand(score) {
+  if (score >= 85) return 'very_high';
+  if (score >= 70) return 'high';
+  if (score >= 50) return 'moderate';
+  return 'low';
+}
+
+function severityBand(score) {
+  if (score >= 75) return 'critical';
+  if (score >= 55) return 'high';
+  if (score >= 35) return 'moderate';
+  return 'emerging';
+}
+
+function urgencyRead(score) {
+  if (score >= 70) return 'immediate_attention';
+  if (score >= 42) return 'rising_cost';
+  return 'watch_now';
+}
+
+function deriveScores(answers) {
+  const breakdown_severity_score = normalize(
+    q3SeverityBase(answers.q3) +
+      q4SeverityBase(answers.q4) +
+      q6SeverityBase(answers.q6) +
+      q2ComplexityBonus(answers.q2)
   );
-  const lowMaturityFlag = operationalMaturity < 26 || totals.lowMaturity >= 60;
-  const trustSensitiveFlag = totals.trust >= 18;
+
+  const communication_risk_dominance_score = normalize(
+    q3CommunicationSignal(answers.q3) +
+      q4CommunicationSignal(answers.q4) +
+      q5CommunicationSignal(answers.q5) +
+      q6CommunicationSignal(answers.q6) +
+      q7CommunicationSignal(answers.q7) +
+      q8CommunicationSignal(answers.q8)
+  );
+
+  const operational_maturity_score = normalize(
+    q5MaturitySignal(answers.q5) + q7MaturitySignal(answers.q7) + q9MaturitySignal(answers.q9) + q2ComplexityBonus(answers.q2)
+  );
+
+  const urgency_score = normalize(
+    q4UrgencySignal(answers.q4) * 0.35 + q6UrgencySignal(answers.q6) * 0.5 + q3SeverityBase(answers.q3) * 0.15
+  );
+
+  const broad_scope_score = normalize(
+    q7BroadSignal(answers.q7) + q8BroadSignal(answers.q8) + q3BroadSignal(answers.q3) + q6BroadSignal(answers.q6)
+  );
+
+  const low_maturity_intensity = normalize(q5LowMaturitySignal(answers.q5) + q9LowMaturitySignal(answers.q9));
 
   return {
-    totals,
-    breakdownSeverity,
-    communicationRisk,
-    operationalMaturity,
-    urgencyReadiness,
-    routeConfidence,
-    breadthScore,
-    lowMaturityFlag,
-    trustSensitiveFlag,
+    breakdown_severity_score,
+    breakdown_severity_band: severityBand(breakdown_severity_score),
+    communication_risk_dominance_score,
+    operational_maturity_score,
+    urgency_score,
+    broad_scope_score,
+    low_maturity_intensity,
+    trust_sensitivity_flag: false,
   };
 }
 
-function classifySeverity(score, urgency) {
-  if (score >= 74 || urgency >= 74) return 'Immediate';
-  if (score >= 52 || urgency >= 52) return 'High';
-  return 'Emerging';
+function buildConflictFlags(answers) {
+  const flags = [];
+  const q3Comm = ['missed_follow_up', 'buried_commitments_or_unanswered_questions'].includes(answers.q3);
+  const q7Broad = ['several_workflows_are_involved', 'broad_operating_layer_fragility'].includes(answers.q7);
+  const q8Positive = ['that_would_solve_the_sharpest_part', 'it_would_solve_most_of_it'].includes(answers.q8);
+  const q8Broader = ['it_would_help_but_bigger_issue_is_broader', 'it_is_not_the_main_issue'].includes(answers.q8);
+  const q9Low = ['loose_and_person_dependent', 'mostly_undocumented_or_improvised'].includes(answers.q9);
+
+  if (q3Comm && q7Broad) flags.push('q3_vs_q7_scope_conflict');
+  if (answers.q5 === 'mostly_memory_and_inbox_habits' && q8Positive) flags.push('q5_fragility_but_q8_trackt_positive');
+  if (answers.q7 === 'mostly_communication_follow_through' && q9Low) flags.push('q7_narrow_but_q9_low_maturity');
+  if (q3Comm && q8Broader) flags.push('q3_comm_pain_but_q8_broader_issue');
+  if (answers.q7 === 'not_sure_of_full_scope_yet') flags.push('q7_unclear_scope');
+
+  return flags;
 }
 
-function classifyUrgency(urgency) {
-  if (urgency >= 72) return 'Immediate attention';
-  if (urgency >= 50) return 'Near-term attention';
-  return 'Monitor and prioritize';
+function deriveRouteConfidence(answers, conflictFlags) {
+  let score = 50;
+
+  if (['mostly_communication_follow_through', 'broad_operating_layer_fragility', 'several_workflows_are_involved'].includes(answers.q7)) score += 15;
+  if (['that_would_solve_the_sharpest_part', 'it_would_solve_most_of_it', 'it_would_help_but_bigger_issue_is_broader', 'it_is_not_the_main_issue'].includes(answers.q8)) score += 15;
+  if (['very_reliable', 'reliable_but_inconsistent_in_practice', 'loose_and_person_dependent', 'mostly_undocumented_or_improvised'].includes(answers.q9)) score += 10;
+
+  const q3Comm = ['missed_follow_up', 'buried_commitments_or_unanswered_questions'].includes(answers.q3);
+  const q3Broad = ['handoffs_or_ownership_gaps', 'too_much_manual_checking_and_chasing'].includes(answers.q3);
+  const q7Narrow = ['mostly_communication_follow_through', 'communication_plus_a_few_adjacent_issues'].includes(answers.q7);
+  const q7Broad = ['several_workflows_are_involved', 'broad_operating_layer_fragility'].includes(answers.q7);
+  const q8Positive = ['that_would_solve_the_sharpest_part', 'it_would_solve_most_of_it'].includes(answers.q8);
+  const q8Broader = ['it_would_help_but_bigger_issue_is_broader', 'it_is_not_the_main_issue'].includes(answers.q8);
+
+  if ((q3Comm && q7Narrow && q8Positive) || (q3Broad && q7Broad && q8Broader)) score += 10;
+
+  const consequenceValues = new Set([answers.q4, answers.q6]);
+  const alignedConsequence =
+    (['revenue_or_conversion', 'client_trust', 'referral_or_partner_confidence'].includes(answers.q4) &&
+      ['deals_or_revenue_slipping_quietly', 'clients_or_partners_feeling_neglected'].includes(answers.q6)) ||
+    (answers.q4 === 'team_time_and_cleanup_work' && ['team_staying_dependent_on_me', 'more_chaos_as_volume_grows'].includes(answers.q6));
+  if (alignedConsequence) score += 5;
+
+  if (conflictFlags.includes('q3_vs_q7_scope_conflict')) score -= 15;
+  if ((q3Comm && q7Broad) || (q3Broad && q7Narrow)) score -= 10;
+  if (answers.q5 === 'mostly_memory_and_inbox_habits' && answers.q9 === 'partly_reliable') score -= 10;
+  if (answers.q7 === 'not_sure_of_full_scope_yet') score -= 10;
+  if (!alignedConsequence && consequenceValues.size === 2) score -= 5;
+
+  return normalize(score);
 }
 
-function recommendationFromScores(scores) {
-  const tracktQualified =
-    scores.communicationRisk >= 68 &&
-    scores.operationalMaturity >= 44 &&
-    scores.breadthScore <= 48 &&
-    scores.urgencyReadiness >= 48 &&
-    scores.routeConfidence >= 66;
+function cleanupGuardPassed(answers) {
+  const lowReliability = ['loose_and_person_dependent', 'mostly_undocumented_or_improvised'].includes(answers.q9);
+  const broadOrUnclearScope = ['several_workflows_are_involved', 'broad_operating_layer_fragility', 'not_sure_of_full_scope_yet'].includes(answers.q7);
+  const visibilityNotEnough = ['it_would_help_but_bigger_issue_is_broader', 'it_is_not_the_main_issue'].includes(answers.q8);
+  const fragilitySignals = [
+    answers.q5 === 'mostly_memory_and_inbox_habits',
+    answers.q5 === 'mixed_tools_with_no_trusted_center',
+    answers.q3 === 'too_much_manual_checking_and_chasing',
+    answers.q6 === 'team_staying_dependent_on_me',
+    answers.q6 === 'more_chaos_as_volume_grows',
+  ].filter(Boolean).length;
 
-  if (
-    scores.urgencyReadiness < 42 &&
-    (scores.breakdownSeverity < 62 || scores.routeConfidence < 46)
-  ) {
-    return 'Education first';
-  }
-
-  if (scores.lowMaturityFlag) {
-    return 'Cleanup first';
-  }
-
-  if (
-    scores.breakdownSeverity >= 66 &&
-    scores.breadthScore >= 56 &&
-    scores.operationalMaturity >= 34 &&
-    scores.urgencyReadiness >= 56
-  ) {
-    return 'Implementation first';
-  }
-
-  if (tracktQualified) {
-    return 'Trackt likely first';
-  }
-
-  return 'Blueprint first';
+  return lowReliability && broadOrUnclearScope && visibilityNotEnough && fragilitySignals >= 1;
 }
 
-function routeKeyForRecommendation(recommendation) {
-  if (recommendation === 'Trackt likely first') return 'trackt';
-  if (recommendation === 'Implementation first') return 'implementation';
-  if (recommendation === 'Cleanup first') return 'cleanup';
-  if (recommendation === 'Education first') return 'education';
-  return 'blueprint';
+function tracktGuardPassed(answers) {
+  const narrowEnough = ['mostly_communication_follow_through', 'communication_plus_a_few_adjacent_issues'].includes(answers.q7);
+  const visibilityWouldSolve = ['that_would_solve_the_sharpest_part', 'it_would_solve_most_of_it'].includes(answers.q8);
+  const hardVeto = answers.q8 === 'it_is_not_the_main_issue' || answers.q8 === 'it_would_help_but_bigger_issue_is_broader' || answers.q9 === 'mostly_undocumented_or_improvised';
+  const handoffPenalty = answers.q3 === 'handoffs_or_ownership_gaps';
+  const strongSignals = [
+    answers.q3 === 'missed_follow_up',
+    answers.q3 === 'buried_commitments_or_unanswered_questions',
+    answers.q4 === 'client_trust',
+    answers.q4 === 'referral_or_partner_confidence',
+    answers.q4 === 'revenue_or_conversion',
+    answers.q6 === 'deals_or_revenue_slipping_quietly',
+    answers.q6 === 'clients_or_partners_feeling_neglected',
+    answers.q5 === 'crm_plus_manual_reminders',
+    answers.q5 === 'task_system_plus_manual_checking',
+    answers.q5 === 'mostly_memory_and_inbox_habits',
+  ].filter(Boolean).length;
+
+  if (hardVeto) return false;
+  if (!narrowEnough || !visibilityWouldSolve) return false;
+  if (handoffPenalty && strongSignals < 4) return false;
+  return strongSignals >= 2;
 }
 
-const breakdownLibrary = {
-  'missed-follow-up': {
-    title: 'Missed follow-up is creating avoidable revenue exposure.',
-    summary: 'Important next steps are slipping because the system is not surfacing them early enough.',
-  },
-  'buried-commitments': {
-    title: 'Commitments are getting buried inside normal communication flow.',
-    summary: 'The issue is less about activity volume and more about visibility into what actually matters now.',
-  },
-  'handoff-gaps': {
-    title: 'Ownership gets blurry when work moves between people.',
-    summary: 'Risk is increasing at handoff points, not just inside a single inbox.',
-  },
-  'ownership-ambiguity': {
-    title: 'The next owner is not consistently obvious.',
-    summary: 'Even when the team is trying hard, accountability is getting diluted by unclear ownership.',
-  },
-  'reactive-visibility': {
-    title: 'Your team is reacting to problems after they surface.',
-    summary: 'By the time risk is visible, trust or revenue has already started to erode.',
-  },
-  'memory-dependence': {
-    title: 'Too much of the workflow still depends on memory.',
-    summary: 'That makes any product layer fragile because the operating foundation is still manual.',
-  },
-  heroics: {
-    title: 'Strong people are compensating for weak systems.',
-    summary: 'The business is getting rescued by effort instead of being carried by a reliable process.',
-  },
-  'process-fragility': {
-    title: 'The process itself is not stable enough yet.',
-    summary: 'The sharper problem is not awareness alone. It is what happens after the team sees the issue.',
-  },
-  'visibility-gap': {
-    title: 'The system can track activity, but not real risk.',
-    summary: 'Current tools show movement. They do not show what is quietly moving toward failure.',
-  },
-  'broad-fragility': {
-    title: 'The issue is spread across more than communication.',
-    summary: 'Intake, handoffs, follow-through, and reporting are feeding the same operating leak.',
-  },
-  'prioritization-gap': {
-    title: 'The first move is still unclear.',
-    summary: 'Pain is present, but the business needs ordering before it needs another tool or workflow build.',
-  },
-  'trust-sensitive': {
-    title: 'Any next step will need trust and boundaries to land well.',
-    summary: 'The recommendation has to respect workflow sensitivity, not just technical fit.',
-  },
-};
-
-function topBreakdowns(questions, answers) {
-  const counts = collectBreakdownCounts(questions, answers);
-  const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  return entries.slice(0, 3).map(([tag]) => breakdownLibrary[tag] || { title: tag, summary: tag });
+function determinePrimaryProblemClass(route, scores) {
+  if (route === 'trackt_first') return 'communication_visibility_risk';
+  if (route === 'diagnosis_cleanup_first') return 'low_maturity_follow_through_system';
+  if (scores.low_maturity_intensity >= 56 && scores.operational_maturity_score < 28) return 'low_maturity_follow_through_system';
+  return 'broader_operational_fragility';
 }
 
-function diagnosisHeadline(recommendation, scores) {
-  if (recommendation === 'Trackt likely first') {
-    return 'Your sharpest leak looks like communication risk, not a full operating rebuild.';
+function deriveRouteAndExplainability(answers, scores, route_confidence_score, conflict_flags) {
+  const reasonCodes = [];
+
+  if (['mostly_communication_follow_through', 'communication_plus_a_few_adjacent_issues'].includes(answers.q7)) reasonCodes.push('narrow_scope');
+  if (['several_workflows_are_involved', 'broad_operating_layer_fragility'].includes(answers.q7)) reasonCodes.push('broad_scope');
+  if (answers.q7 === 'not_sure_of_full_scope_yet') reasonCodes.push('unclear_scope');
+
+  if (['that_would_solve_the_sharpest_part', 'it_would_solve_most_of_it'].includes(answers.q8)) reasonCodes.push('visibility_solves_most');
+  if (answers.q8 === 'it_would_solve_one_important_part_not_all') reasonCodes.push('visibility_only_partial');
+  if (answers.q8 === 'it_is_not_the_main_issue') reasonCodes.push('visibility_not_main_issue');
+
+  if (answers.q5 === 'mostly_memory_and_inbox_habits') reasonCodes.push('current_system_memory_driven');
+  if (answers.q5 === 'mixed_tools_with_no_trusted_center') reasonCodes.push('current_system_fragmented');
+
+  if (['very_reliable', 'reliable_but_inconsistent_in_practice', 'partly_reliable'].includes(answers.q9)) reasonCodes.push('process_partly_reliable');
+  if (['loose_and_person_dependent', 'mostly_undocumented_or_improvised'].includes(answers.q9)) reasonCodes.push('process_low_reliability');
+
+  reasonCodes.push(...q4ReasonCodes(answers.q4));
+  reasonCodes.push(...q6ReasonCodes(answers.q6));
+
+  let route = 'aaryx_implementation_first';
+
+  if (cleanupGuardPassed(answers) && route_confidence_score >= 65) {
+    route = 'diagnosis_cleanup_first';
+    reasonCodes.push('cleanup_guard_passed');
+  } else if (tracktGuardPassed(answers) && route_confidence_score >= 70) {
+    route = 'trackt_first';
+    reasonCodes.push('trackt_guard_passed');
+  } else {
+    route = 'aaryx_implementation_first';
+    reasonCodes.push('implementation_fallback_used');
   }
-  if (recommendation === 'Implementation first') {
-    return 'The bigger problem looks broader than missed follow-up alone.';
-  }
-  if (recommendation === 'Cleanup first') {
-    return 'The system is still too memory-dependent for a product-first fix.';
-  }
-  if (recommendation === 'Education first') {
-    return 'The signal is real, but the business does not look ready for a heavy intervention yet.';
-  }
-  if (scores.breadthScore >= 56) {
-    return 'Several weak points are likely amplifying each other inside the workflow.';
-  }
-  return 'The pain is clear, but the first move still needs prioritization before execution.';
+
+  const trackt_secondary_fit =
+    route === 'aaryx_implementation_first' &&
+    answers.q7 === 'communication_plus_a_few_adjacent_issues' &&
+    answers.q8 === 'it_would_solve_one_important_part_not_all' &&
+    ['partly_reliable', 'reliable_but_inconsistent_in_practice'].includes(answers.q9);
+
+  const confidence_band = confidenceBand(route_confidence_score);
+  const primary_problem_class = determinePrimaryProblemClass(route, scores);
+
+  return {
+    route,
+    route_label: ROUTE_LABELS[route],
+    route_reason_codes: [...new Set(reasonCodes)],
+    conflict_flags,
+    confidence_band,
+    route_confidence_score,
+    primary_problem_class,
+    trackt_secondary_fit,
+  };
 }
 
-function whyCurrentSetup(scores, answers, recommendation) {
-  if (recommendation === 'Trackt likely first') {
-    return 'Your current setup appears able to act once risk is visible. The gap is seeing the right commitments, questions, and follow-up risk early enough.';
+function headlineDiagnosis(route, answers, primaryProblemClass) {
+  if (route === 'trackt_first') {
+    return 'The sharpest problem appears to be communication risk visibility, not a full operating rebuild.';
   }
-  if (recommendation === 'Implementation first') {
-    return 'Current tools may be capturing activity, but they are not solving ownership, consistency, or cross-workflow handoffs. That keeps the same leak showing up in different places.';
+  if (route === 'diagnosis_cleanup_first') {
+    return 'The current follow-through system looks too fragile for a product-first or contained implementation-first move.';
   }
-  if (recommendation === 'Cleanup first') {
-    return 'The workflow still depends too heavily on memory, patchwork, or heroics. Even better visibility would be hard to act on consistently right now.';
+  if (primaryProblemClass === 'broader_operational_fragility') {
+    return 'The bigger problem appears broader than missed follow-up alone.';
   }
-  if (recommendation === 'Education first') {
-    return 'The consequence signal is still light. The issue is visible, but it does not yet look urgent enough for a high-friction fix.';
-  }
-  if (answers.q9 === 'not-sure-full-scope') {
-    return 'The core problem may be bigger than any one symptom, but the exact first move is still blurred by mixed signals across visibility, ownership, and process.';
-  }
-  return 'Right now the setup is exposing pain without clearly showing whether the first fix belongs in product, workflow repair, or sequencing.';
+  return 'Several weak points are likely amplifying each other inside the workflow.';
 }
 
-function recommendationBody(recommendation) {
-  if (recommendation === 'Trackt likely first') {
-    return 'Trackt looks like the best first route because the sharpest problem is earlier visibility into at-risk commitments and follow-through. This recommendation does not assume software is the answer every time. It is specific to the pattern in your answers.';
+function whyCurrentSetupMissesIt(route, answers) {
+  if (route === 'trackt_first') {
+    return 'Your current setup may let people act once the risk is visible, but it is not surfacing the right commitments, follow-ups, and unanswered questions early enough.';
   }
-  if (recommendation === 'Implementation first') {
-    return 'A contained operating fix should come before a visibility layer. The leak looks broad enough that workflow repair will create more leverage than dropping a product into the middle of it.';
+  if (route === 'diagnosis_cleanup_first') {
+    return 'The workflow still depends too much on memory, patchwork, or person-dependent execution. Better visibility alone would be hard to turn into consistent action right now.';
   }
-  if (recommendation === 'Cleanup first') {
-    return 'Stabilization should come first. Clean up ownership, memory dependence, and process consistency before layering in product or automation.';
+  if (['several_workflows_are_involved', 'broad_operating_layer_fragility'].includes(answers.q7)) {
+    return 'Current tools may be capturing activity in pieces, but they are not resolving ownership, handoffs, and cross-workflow consistency well enough to stop the same leak from reappearing.';
   }
-  if (recommendation === 'Education first') {
-    return 'A lighter education-first route makes more sense right now. The issue is visible, but the business may need clearer internal alignment before a stronger move is useful.';
-  }
-  return 'The Full Operational Blueprint looks like the right next move because the business likely needs prioritization before it chooses product, implementation, or cleanup.';
+  return 'The setup is exposing pain without clearly containing it. That is why a broader operating fix appears stronger than another narrow layer on top.';
 }
 
-function sequenceNote(recommendation, scores) {
-  if (recommendation === 'Cleanup first') {
-    return 'Sequence note. Stabilize the operating layer first. Then reassess whether product or implementation should come next.';
+function primaryRecommendation(route) {
+  if (route === 'trackt_first') {
+    return 'Trackt should come first because earlier visibility into at-risk follow-ups, commitments, and next steps appears to be the sharpest fix.';
   }
-  if (recommendation === 'Blueprint first' && scores.routeConfidence < 68) {
-    return 'Sequence note. The first move is directionally clear, but not sharp enough yet for a product-first or implementation-first push.';
+  if (route === 'diagnosis_cleanup_first') {
+    return 'Diagnosis and cleanup should come first so ownership, consistency, and operating discipline are stable enough for later product or implementation work to hold.';
   }
-  if (recommendation === 'Implementation first' && scores.communicationRisk >= 64) {
-    return 'Sequence note. Once the process is tighter, a visibility layer may become the right second move.';
+  return 'AARYX Implementation should come first because the issue appears broader than visibility alone and needs a contained operating-layer fix before anything narrower.';
+}
+
+function sequenceNote(route, classification) {
+  if (route === 'diagnosis_cleanup_first') {
+    return 'Sequence note. Stabilize the operating layer first. Then reassess whether Trackt or a narrower implementation should come next.';
+  }
+  if (route === 'aaryx_implementation_first' && classification.trackt_secondary_fit) {
+    return 'Sequence note. Trackt may become the right second move once the broader workflow issues are tightened.';
   }
   return '';
 }
 
-function gateDiagnosis(recommendation, scores) {
-  if (recommendation === 'Trackt likely first') {
-    return 'Your answers suggest the sharpest issue is communication visibility. Important commitments and follow-up risk are likely getting noticed too late, while the operating foundation looks stable enough to act once the signal is visible.';
-  }
-  if (recommendation === 'Implementation first') {
-    return 'Your answers suggest the problem is broader than missed follow-up alone. Weak ownership, inconsistent execution, and cross-workflow friction are likely amplifying the communication breakdown.';
-  }
-  if (recommendation === 'Cleanup first') {
-    return 'Your answers suggest the business is still relying too heavily on memory, patchwork, or heroics. That makes any tool-first move weaker until the operating footing is cleaner.';
-  }
-  if (recommendation === 'Education first') {
-    return 'Your answers suggest the leak is still emerging. The issue is real, but the business may not be close enough to action for a heavier intervention to land well yet.';
-  }
-  return 'Your answers suggest the problem is real, but the first move is still mixed. Several weak points may be interacting, which is why clearer prioritization should come before a narrower solution.';
+function ctaForRoute(route) {
+  if (route === 'trackt_first') return { route: 'trackt_waitlist', ...CTA_ROUTES.trackt_waitlist };
+  if (route === 'diagnosis_cleanup_first') return { route: 'cleanup_diagnostic_path', ...CTA_ROUTES.cleanup_diagnostic_path };
+  return { route: 'aaryx_implementation_path', ...CTA_ROUTES.aaryx_implementation_path };
 }
 
-function previewBullets(recommendation, breakdowns, scores) {
-  const primary = breakdowns[0]?.title || 'Your primary breakdown pattern';
-  const why = whyCurrentSetup(scores, {}, recommendation);
-  const next = recommendation === 'Blueprint first'
-    ? 'The report will show why the Full Operational Blueprint should come before product or implementation.'
-    : recommendation === 'Trackt likely first'
-      ? 'The report will show why a visibility layer looks like the strongest first move.'
-      : recommendation === 'Implementation first'
-        ? 'The report will show why an operating-layer fix should come before another tool.'
-        : recommendation === 'Cleanup first'
-          ? 'The report will show what needs to be stabilized before product or automation.'
-          : 'The report will show the lowest-friction next step to start with.';
+function resultBoundaryDisclaimer() {
+  return 'This result is based on the pattern in your answers, not a full system audit. Trackt is only recommended when earlier visibility appears to be the sharpest problem.';
+}
 
-  return [
-    primary,
-    why,
-    next,
-  ];
+function gateDiagnosis(route) {
+  if (route === 'trackt_first') {
+    return 'Your answers suggest the sharpest issue is seeing which follow-ups or commitments are at risk before they are missed.';
+  }
+  if (route === 'diagnosis_cleanup_first') {
+    return 'Your answers suggest the workflow is still too inconsistent or fragile for a clean product-first recommendation.';
+  }
+  return 'Your answers suggest the problem is broader than communication visibility alone and likely needs an operating-layer fix first.';
+}
+
+function previewBullets(headline, whyMissed, recommendation) {
+  return [headline, whyMissed, recommendation];
 }
 
 export function buildBlueprintSession(answers, identity = {}) {
-  const branchSelection = selectBranchFamily(answers);
-  const trustSensitiveOverride = branchSelection.provisional.trustSensitive;
-  const branchQuestions = getBranchQuestions(branchSelection.branchKey, trustSensitiveOverride);
-  const allQuestions = [...universalQuestions, ...branchQuestions];
-  const scores = scoreFinal(allQuestions, answers);
-  const recommendation = recommendationFromScores(scores);
-  const breakdowns = topBreakdowns(allQuestions, answers);
-  const severityCue = classifySeverity(scores.breakdownSeverity, scores.urgencyReadiness);
-  const urgencyRead = classifyUrgency(scores.urgencyReadiness);
-  const primaryCtaRoute = routeKeyForRecommendation(recommendation);
-  const primaryCta = ctaRoutes[primaryCtaRoute];
-  const headline = diagnosisHeadline(recommendation, scores);
-  const whyMissed = whyCurrentSetup(scores, answers, recommendation);
-  const recommendationText = recommendationBody(recommendation);
-  const sequence = sequenceNote(recommendation, scores);
-  const gateSentence = gateDiagnosis(recommendation, scores);
-  const preview = previewBullets(recommendation, breakdowns, scores);
+  const scores = deriveScores(answers);
+  const conflict_flags = buildConflictFlags(answers);
+  const route_confidence_score = deriveRouteConfidence(answers, conflict_flags);
+  const classification = deriveRouteAndExplainability(answers, scores, route_confidence_score, conflict_flags);
+  const top_breakdowns = topBreakdowns(answers);
+  const headline_diagnosis = headlineDiagnosis(classification.route, answers, classification.primary_problem_class);
+  const why_current_setup_misses_it = whyCurrentSetupMissesIt(classification.route, answers);
+  const primary_recommendation = primaryRecommendation(classification.route);
+  const sequence_note_optional = sequenceNote(classification.route, classification);
+  const cta = ctaForRoute(classification.route);
+  const urgency_read = urgencyRead(scores.urgency_score);
 
-  const session = {
-    answers,
+  return {
+    assessment_version: ASSESSMENT_VERSION,
     identity,
-    branchFamily: branchSelection.branchKey,
-    branchLabel: branchFamilies[branchSelection.branchKey].label,
-    trustSensitiveOverride,
-    scores,
-    recommendation,
-    primaryCtaRoute,
-    primaryCta,
-    severityCue,
-    urgencyRead,
-    headline,
-    breakdowns,
-    whyMissed,
-    recommendationText,
-    sequence,
-    gateSentence,
-    preview,
+    answers,
+    derived: {
+      ...scores,
+      route_confidence_score,
+      confidence_band: classification.confidence_band,
+      trackt_secondary_fit: classification.trackt_secondary_fit,
+    },
+    classification,
+    result_page_model: {
+      assessment_version: ASSESSMENT_VERSION,
+      respondent_first_name_optional: identity.firstName || '',
+      route: classification.route,
+      route_label: classification.route_label,
+      confidence_band: classification.confidence_band,
+      confidence_score: route_confidence_score,
+      severity_band: scores.breakdown_severity_band,
+      severity_score: scores.breakdown_severity_score,
+      headline_diagnosis,
+      urgency_read,
+      primary_problem_class: classification.primary_problem_class,
+      primary_problem_class_label: PRIMARY_PROBLEM_CLASS_LABELS[classification.primary_problem_class],
+      top_breakdowns,
+      why_current_setup_misses_it,
+      primary_recommendation,
+      sequence_note_optional,
+      cta,
+      cta_route: cta.route,
+      disclaimer_line: resultBoundaryDisclaimer(),
+    },
+    gate_diagnosis_sentence: gateDiagnosis(classification.route),
+    gate_preview_bullets: previewBullets(headline_diagnosis, why_current_setup_misses_it, primary_recommendation),
+    route_reason_code_labels: ROUTE_REASON_CODE_LABELS,
+    conflict_flag_labels: CONFLICT_FLAG_LABELS,
   };
-
-  return session;
 }
 
 export function buildPayload(session) {
-  const { answers, identity, branchFamily, scores, recommendation, primaryCtaRoute, trustSensitiveOverride } = session;
-  const branchQuestions = getBranchQuestions(branchFamily, trustSensitiveOverride);
+  const { answers, identity, derived, classification, result_page_model } = session;
 
-  const payload = {
-    first_name: identity.firstName || '',
+  const crm_payload = {
+    first_name_optional: identity.firstName || '',
     email: identity.email || '',
-    blueprint_role: labelFor('q1', answers.q1),
-    blueprint_people_affecting_next_step: labelFor('q2', answers.q2),
-    blueprint_biggest_problem: labelFor('q3', answers.q3),
-    blueprint_first_impact: labelFor('q4', answers.q4),
-    blueprint_current_followup_method: labelFor('q5', answers.q5),
-    blueprint_90_day_risk: labelFor('q6', answers.q6),
-    blueprint_branch_family: branchFamily,
-    blueprint_q7_response: labelFor(branchQuestions[0].id, answers.q7, branchFamily, trustSensitiveOverride),
-    blueprint_q8_response: labelFor(branchQuestions[1].id, answers.q8, branchFamily, trustSensitiveOverride),
-    blueprint_q9_response: labelFor(branchQuestions[2].id, answers.q9, branchFamily, trustSensitiveOverride),
-    blueprint_q10_response: labelFor(branchQuestions[3].id, answers.q10, branchFamily, trustSensitiveOverride),
-    blueprint_q11_response: labelFor(branchQuestions[4].id, answers.q11, branchFamily, trustSensitiveOverride),
-    blueprint_q12_response: labelFor(branchQuestions[5].id, answers.q12, branchFamily, trustSensitiveOverride),
-    blueprint_q7_id: branchQuestions[0].id,
-    blueprint_q8_id: branchQuestions[1].id,
-    blueprint_q9_id: branchQuestions[2].id,
-    blueprint_q10_id: branchQuestions[3].id,
-    blueprint_q11_id: branchQuestions[4].id,
-    blueprint_q12_id: branchQuestions[5].id,
-    blueprint_primary_problem_class: session.headline,
-    blueprint_primary_recommendation: recommendation,
-    blueprint_secondary_sequence_note_optional: session.sequence || '',
-    blueprint_breakdown_severity_score: scores.breakdownSeverity,
-    blueprint_communication_risk_score: scores.communicationRisk,
-    blueprint_operational_maturity_score: scores.operationalMaturity,
-    blueprint_urgency_readiness_score: scores.urgencyReadiness,
-    blueprint_route_confidence_score: scores.routeConfidence,
-    blueprint_trust_sensitive_flag: scores.trustSensitiveFlag,
-    blueprint_low_maturity_flag: scores.lowMaturityFlag,
-    blueprint_primary_cta_route: primaryCtaRoute,
-    blueprint_strategy_review_eligible: primaryCtaRoute === 'blueprint' || primaryCtaRoute === 'implementation',
-    blueprint_trackt_route_eligible: primaryCtaRoute === 'trackt',
-    blueprint_nurture_segment: primaryCtaRoute === 'education' ? 'education-first' : primaryCtaRoute === 'cleanup' ? 'cleanup-first' : 'high-intent',
-    zoho_live_connected: false,
+    blueprint_role_type: answers.q1,
+    blueprint_people_affecting_next_step: answers.q2,
+    blueprint_biggest_problem: answers.q3,
+    blueprint_first_impact: answers.q4,
+    blueprint_followup_method: answers.q5,
+    blueprint_ninety_day_risk: answers.q6,
+    blueprint_problem_scope: answers.q7,
+    blueprint_visibility_solution_scope: answers.q8,
+    blueprint_followup_consistency: answers.q9,
+    blueprint_breakdown_severity_score: derived.breakdown_severity_score,
+    blueprint_breakdown_severity_band: derived.breakdown_severity_band,
+    blueprint_communication_risk_dominance_score: derived.communication_risk_dominance_score,
+    blueprint_operational_maturity_score: derived.operational_maturity_score,
+    blueprint_urgency_score: derived.urgency_score,
+    blueprint_route_confidence_score: derived.route_confidence_score,
+    blueprint_confidence_band: derived.confidence_band,
+    blueprint_primary_problem_class: classification.primary_problem_class,
+    blueprint_primary_route: classification.route,
+    blueprint_trackt_secondary_fit: derived.trackt_secondary_fit,
+    blueprint_trust_sensitive_flag: derived.trust_sensitivity_flag,
+    blueprint_headline_diagnosis: result_page_model.headline_diagnosis,
+    blueprint_primary_recommendation: result_page_model.primary_recommendation,
+    blueprint_cta_label: result_page_model.cta.label,
+    blueprint_cta_route: result_page_model.cta_route,
+    blueprint_sequence_note_optional: result_page_model.sequence_note_optional,
+    blueprint_route_reason_codes_json: JSON.stringify(classification.route_reason_codes),
+    blueprint_conflict_flags_json: JSON.stringify(classification.conflict_flags),
+    blueprint_assessment_version: ASSESSMENT_VERSION,
   };
 
-  return payload;
-}
-
-function labelFor(questionId, answerValue, branchKey = 'A', trustSensitiveOverride = false) {
-  const question = getQuestionById(questionId, branchKey, trustSensitiveOverride);
-  return getOption(question, answerValue)?.label || '';
+  return {
+    assessment_id: crypto.randomUUID(),
+    assessment_version: ASSESSMENT_VERSION,
+    submitted_at: new Date().toISOString(),
+    answers: {
+      role_type: answers.q1,
+      people_affecting_next_step: answers.q2,
+      biggest_problem: answers.q3,
+      first_impact: answers.q4,
+      followup_method: answers.q5,
+      ninety_day_risk: answers.q6,
+      problem_scope: answers.q7,
+      visibility_solution_scope: answers.q8,
+      followup_consistency: answers.q9,
+    },
+    answer_labels: {
+      q1: labelFor('q1', answers.q1),
+      q2: labelFor('q2', answers.q2),
+      q3: labelFor('q3', answers.q3),
+      q4: labelFor('q4', answers.q4),
+      q5: labelFor('q5', answers.q5),
+      q6: labelFor('q6', answers.q6),
+      q7: labelFor('q7', answers.q7),
+      q8: labelFor('q8', answers.q8),
+      q9: labelFor('q9', answers.q9),
+    },
+    derived_scores: derived,
+    classification,
+    result_page_model,
+    crm_payload,
+  };
 }
 
 export function buildReport(session, payload) {
-  const name = session.identity.firstName ? `${session.identity.firstName},` : 'There,';
-  const breakdownTitles = session.breakdowns.map((item) => item.title);
-  const report = {
-    subject: `Your AARYX Blueprint Assessment: ${session.recommendation}`,
-    preview: `${session.headline} ${session.recommendationText}`,
-    body: [
-      `Hi ${name}`,
-      '',
-      'Your AARYX Blueprint Assessment is ready.',
-      '',
-      'Your main operating risk',
-      session.headline,
-      '',
-      'What is breaking first',
-      breakdownTitles[0] || session.breakdowns[0]?.summary || session.headline,
-      '',
-      'Why current tools or habits are not catching it early enough',
-      session.whyMissed,
-      '',
-      'Where the issue appears to live',
-      session.recommendation === 'Trackt likely first'
-        ? 'This looks mostly communication visibility driven.'
-        : session.recommendation === 'Implementation first'
-          ? 'This looks broader than communication visibility alone.'
-          : session.recommendation === 'Cleanup first'
-            ? 'This looks like low-maturity workflow risk first.'
-            : 'This looks mixed enough that prioritization should come before a narrower fix.',
-      '',
-      'What this likely costs if ignored',
-      session.severityCue === 'Immediate'
-        ? 'The leak is likely already touching trust, timing, or revenue in a meaningful way.'
-        : session.severityCue === 'High'
-          ? 'The leak is likely compounding quietly and will become more expensive if it keeps running.'
-          : 'The leak is still emerging, but it is easier to address now than after volume increases.',
-      '',
-      'What should come first',
-      session.recommendationText,
-      '',
-      'Why this route was chosen',
-      `Branch family selected: ${session.branchLabel}. Route confidence stayed internal, but the recommendation strengthened because the answers aligned around ${session.primaryCtaRoute}.`,
-      '',
-      'Your next best step',
-      `${session.primaryCta.label}: ${session.primaryCta.href}`,
-      session.sequence || '',
-      '',
-      'Trust note',
-      'This recommendation is based on the pattern in your answers, not a full system audit. Trackt is only recommended when earlier visibility appears to be the sharpest problem.',
-      '',
-      'CRM-ready snapshot',
-      JSON.stringify(payload, null, 2),
-    ].filter(Boolean).join('\n'),
-  };
+  const firstName = session.identity.firstName ? `${session.identity.firstName},` : 'there,';
+  const breakdownLines = session.result_page_model.top_breakdowns.map((item) => `- ${item.title}`);
 
-  return report;
+  return {
+    subject: `Your AARYX Blueprint Result: ${session.result_page_model.route_label}`,
+    preview: session.result_page_model.headline_diagnosis,
+    body: [
+      `Hi ${firstName}`,
+      '',
+      'Your AARYX Blueprint result is ready.',
+      '',
+      '1. Your main operating risk',
+      session.result_page_model.headline_diagnosis,
+      '',
+      '2. What is breaking first',
+      ...breakdownLines,
+      '',
+      '3. Why current tools or habits are not catching it early enough',
+      session.result_page_model.why_current_setup_misses_it,
+      '',
+      '4. Whether the issue is mostly communication visibility or broader operating fragility',
+      PRIMARY_PROBLEM_CLASS_LABELS[session.classification.primary_problem_class],
+      '',
+      '5. What this likely costs if ignored',
+      session.result_page_model.urgency_read === 'immediate_attention'
+        ? 'The leak appears close to immediate trust, timing, or revenue consequences.'
+        : session.result_page_model.urgency_read === 'rising_cost'
+          ? 'The leak appears to be compounding quietly and getting more expensive over time.'
+          : 'The leak is still emerging, but it is easier to correct now than after more volume builds.',
+      '',
+      '6. What should come first',
+      session.result_page_model.primary_recommendation,
+      '',
+      '7. Why this route was chosen',
+      ...session.classification.route_reason_codes.map((code) => `- ${ROUTE_REASON_CODE_LABELS[code]}`),
+      ...(session.classification.conflict_flags.length
+        ? ['', 'Mixed-signal notes', ...session.classification.conflict_flags.map((code) => `- ${CONFLICT_FLAG_LABELS[code]}`)]
+        : []),
+      '',
+      '8. Your next best step',
+      `${session.result_page_model.cta.label}: ${session.result_page_model.cta.href}`,
+      ...(session.result_page_model.sequence_note_optional ? ['', session.result_page_model.sequence_note_optional] : []),
+      '',
+      'Assessment boundary',
+      session.result_page_model.disclaimer_line,
+      '',
+      'CRM-ready payload',
+      JSON.stringify(payload.crm_payload, null, 2),
+    ].join('\n'),
+  };
 }
 
 export function persistBlueprintArtifacts(session, payload, report) {
@@ -531,15 +745,6 @@ export function restoreBlueprintArtifacts() {
   }
 }
 
-export function buildQuestionSequence(answers) {
-  const branchSelection = selectBranchFamily(answers);
-  const branchQuestions = getBranchQuestions(branchSelection.branchKey, branchSelection.provisional.trustSensitive);
-  return {
-    branchSelection,
-    questions: [...universalQuestions, ...branchQuestions],
-  };
-}
-
 export function emailServiceAvailable() {
   return false;
 }
@@ -548,6 +753,7 @@ export function queueEmailReport(report) {
   if (emailServiceAvailable()) {
     return { delivered: true, message: 'Report sent through the configured email service.' };
   }
+
   return {
     delivered: false,
     message: 'No email delivery service is configured in this repo yet. The report draft was generated and stored locally for testing.',
