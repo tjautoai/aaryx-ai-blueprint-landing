@@ -71,6 +71,7 @@
 }
 
 .blueprint-progress-kicker,
+.blueprint-progress-support,
 .blueprint-question-stage,
 .blueprint-branch-note,
 .blueprint-result-lead,
@@ -78,7 +79,8 @@
 .blueprint-gate-trust p,
 .blueprint-local-note p,
 .blueprint-reset-link,
-.blueprint-sequence-note {
+.blueprint-sequence-note,
+.blueprint-reason-list li {
   color: #aab0bf;
 }
 
@@ -89,6 +91,12 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-family: 'Space Mono', monospace;
+}
+
+.blueprint-progress-support {
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-size: 0.92rem;
 }
 
 .blueprint-stage-track {
@@ -188,6 +196,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.blueprint-question-grid.is-single {
+  grid-template-columns: 1fr;
+}
+
 .blueprint-question-card {
   padding: 22px;
 }
@@ -250,7 +262,7 @@
 }
 
 .blueprint-branch-note {
-  max-width: 260px;
+  max-width: 300px;
   text-align: right;
   font-size: 0.94rem;
 }
@@ -260,7 +272,8 @@
   font-size: clamp(1.7rem, 3vw, 2.7rem);
 }
 
-.blueprint-severity-chip {
+.blueprint-severity-chip,
+.blueprint-inline-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -271,6 +284,9 @@
   font-size: 0.8rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.blueprint-severity-chip {
   margin: 18px 0 22px;
 }
 
@@ -280,13 +296,14 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.severity-high {
+.severity-moderate {
   background: rgba(0, 212, 170, 0.14);
   color: #6ff3d1;
   border: 1px solid rgba(0, 212, 170, 0.25);
 }
 
-.severity-immediate {
+.severity-high,
+.severity-critical {
   background: rgba(59, 106, 245, 0.16);
   color: #a9c0ff;
   border: 1px solid rgba(59, 106, 245, 0.32);
@@ -400,6 +417,11 @@
   color: #ffffff;
 }
 
+.blueprint-reason-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
+
 .blueprint-reset-link {
   border: 0;
   background: transparent;
@@ -461,7 +483,8 @@
 
   .blueprint-subtitle,
   .blueprint-result-lead,
-  .blueprint-branch-note {
+  .blueprint-branch-note,
+  .blueprint-progress-support {
     font-size: 0.96rem;
   }
 

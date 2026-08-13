@@ -1,8 +1,7 @@
-import { branchFamilies, ctaRoutes, stageOrder, universalQuestions } from './data.js';
+import { ASSESSMENT_VERSION, CTA_ROUTES, QUESTION_MAP, QUESTIONS, QUESTION_SCREENS, ROUTE_LABELS, STAGE_LABELS } from './data.js';
 import {
   buildBlueprintSession,
   buildPayload,
-  buildQuestionSequence,
   buildReport,
   persistBlueprintArtifacts,
   queueEmailReport,
@@ -13,76 +12,60 @@ const app = document.getElementById('blueprint-app');
 
 const state = {
   step: 'entry',
-  pairIndex: 0,
+  screenIndex: 0,
   answers: {},
   identity: {
     firstName: '',
     email: '',
   },
-  branchKey: null,
-  trustSensitiveOverride: false,
   session: null,
   payload: null,
   report: null,
   emailDelivery: null,
 };
 
-const questionPairs = (questions) => {
-  const pairs = [];
-  for (let index = 0; index < questions.length; index += 2) {
-    pairs.push(questions.slice(index, index + 2));
-  }
-  return pairs;
-};
-
-function currentQuestionBundle() {
-  const sequence = buildQuestionSequence(state.answers);
-  state.branchKey = sequence.branchSelection.branchKey;
-  state.trustSensitiveOverride = sequence.branchSelection.provisional.trustSensitive;
-  return sequence;
+function currentScreenQuestionIds() {
+  return QUESTION_SCREENS[state.screenIndex] || [];
 }
 
-function clearBranchAnswers() {
-  ['q7', 'q8', 'q9', 'q10', 'q11', 'q12'].forEach((key) => delete state.answers[key]);
+function currentScreenQuestions() {
+  return currentScreenQuestionIds().map((id) => QUESTION_MAP[id]).filter(Boolean);
 }
 
-function setAnswer(questionId, value) {
-  const previousBranch = state.branchKey;
-  state.answers[questionId] = value;
-  const sequence = buildQuestionSequence(state.answers);
-  if (previousBranch && sequence.branchSelection.branchKey !== previousBranch) {
-    clearBranchAnswers();
-    state.answers[questionId] = value;
-  }
-  state.branchKey = sequence.branchSelection.branchKey;
-  state.trustSensitiveOverride = sequence.branchSelection.provisional.trustSensitive;
-  render();
+function screenComplete() {
+  return currentScreenQuestionIds().every((id) => Boolean(state.answers[id]));
 }
 
-function updateIdentity(field, value) {
-  state.identity[field] = value;
-}
-
-function screenIndex() {
-  if (state.step === 'entry') return 0;
-  if (state.step === 'questions') return state.pairIndex + 1;
-  if (state.step === 'gate') return 7;
-  return 8;
-}
-
-function stageLabelForScreen() {
+function activeStageLabel() {
   if (state.step === 'entry') return 'Framing';
+  if (state.step === 'questions') return STAGE_LABELS[state.screenIndex + 1] || 'Blueprint';
   if (state.step === 'gate') return 'Blueprint Ready';
-  if (state.step === 'results') return 'Results';
-  const bundle = currentQuestionBundle();
-  const pair = questionPairs(bundle.questions)[state.pairIndex] || [];
-  return pair[0]?.stage || 'Blueprint';
+  return 'Results';
+}
+
+function activeProgressNumber() {
+  if (state.step === 'entry') return 0;
+  if (state.step === 'questions') {
+    const answeredCount = Math.max(...currentScreenQuestionIds().map((id) => QUESTIONS.findIndex((q) => q.id === id) + 1));
+    return answeredCount;
+  }
+  return 9;
+}
+
+function progressSupportLine() {
+  if (state.step === 'entry') return 'A premium diagnostic built to route the first move cleanly.';
+  if (state.step === 'questions') {
+    if (state.screenIndex <= 1) return 'About 4 minutes left.';
+    if (state.screenIndex <= 3) return 'Now narrowing the diagnosis.';
+    return 'Final recommendation next.';
+  }
+  if (state.step === 'gate') return 'Enter your email to unlock the full result.';
+  return 'One recommendation. One next step.';
 }
 
 function renderProgress() {
-  const activeIndex = screenIndex();
-  const totalVisibleScreens = 8;
-  const labels = ['Framing', 'Operating Reality', 'Breakdown Pattern', 'System Pressure', 'Branch Diagnosis', 'Route Clarity', 'Recommendation', 'Blueprint Ready'];
+  const progress = activeProgressNumber();
+  const activeStage = activeStageLabel();
 
   return `
     <section class="blueprint-progress-shell">
@@ -94,20 +77,24 @@ function renderProgress() {
       <div class="blueprint-progress-meta">
         <div>
           <p class="blueprint-progress-kicker">Current stage</p>
-          <strong>${stageLabelForScreen()}</strong>
+          <strong>${activeStage}</strong>
+          <p class="blueprint-progress-support">${progressSupportLine()}</p>
         </div>
         <div>
           <p class="blueprint-progress-kicker">Progress</p>
-          <strong>${Math.min(activeIndex + 1, totalVisibleScreens)} / ${totalVisibleScreens}</strong>
+          <strong>${progress} / 9 questions</strong>
         </div>
       </div>
       <div class="blueprint-stage-track" aria-hidden="true">
-        ${labels
-          .map(
-            (label, index) => `
-              <span class="blueprint-stage-pill ${index <= activeIndex ? 'is-active' : ''}">${label}</span>
-            `
-          )
+        ${STAGE_LABELS.slice(0, 7)
+          .map((label, index) => {
+            const isActive =
+              (state.step === 'entry' && index === 0) ||
+              (state.step === 'questions' && index <= state.screenIndex + 1) ||
+              (state.step === 'gate' && index <= 6) ||
+              state.step === 'results';
+            return `<span class="blueprint-stage-pill ${isActive ? 'is-active' : ''}">${label}</span>`;
+          })
           .join('')}
       </div>
     </section>
@@ -120,9 +107,9 @@ function renderEntry() {
     <section class="blueprint-panel blueprint-entry-panel">
       <div class="blueprint-entry-copy">
         <p class="section-tag">What this does</p>
-        <h2>Separate communication risk from broader operating-layer failure.</h2>
+        <h2>Separate communication risk from broader operating fragility.</h2>
         <p>
-          In 12 questions, this diagnostic looks at where follow-through is breaking, what that is likely affecting first, and what should come before you add another tool or workflow layer.
+          In 9 questions, this diagnostic determines whether the sharper issue is at-risk follow-through visibility, broader workflow fragility, or cleanup that should happen before a tool-first move.
         </p>
         <div class="blueprint-trust-grid">
           <article>
@@ -142,10 +129,10 @@ function renderEntry() {
       <aside class="blueprint-preview-card" aria-label="Blueprint output preview">
         <p class="card-kicker">What your Blueprint will surface</p>
         <ul class="blueprint-preview-list">
-          <li>Your dominant breakdown pattern</li>
-          <li>Why the current setup is missing it</li>
-          <li>Whether the sharper issue is communication visibility or broader process fragility</li>
-          <li>One next step only</li>
+          <li>Your headline diagnosis</li>
+          <li>Your severity and urgency read</li>
+          <li>Why the current setup is missing the problem</li>
+          <li>One primary recommendation and one next step</li>
         </ul>
         <button class="button button-primary blueprint-primary-button" type="button" data-action="start">Begin the Assessment</button>
         <p class="blueprint-trust-line">No spam. No newsletter bait. This assessment is designed to determine fit first, not push you into the wrong solution.</p>
@@ -156,10 +143,9 @@ function renderEntry() {
 
 function renderQuestionCard(question) {
   const selected = state.answers[question.id] || '';
-
   return `
     <article class="blueprint-question-card">
-      <p class="blueprint-question-stage">${question.stage}</p>
+      <p class="blueprint-question-stage">Question ${question.display_order} of 9</p>
       <h2>${question.prompt}</h2>
       <div class="blueprint-option-list" role="radiogroup" aria-label="${question.prompt}">
         ${question.options
@@ -183,63 +169,50 @@ function renderQuestionCard(question) {
   `;
 }
 
-function currentPairState() {
-  const bundle = currentQuestionBundle();
-  const pairs = questionPairs(bundle.questions);
-  return {
-    branchKey: bundle.branchSelection.branchKey,
-    pair: pairs[state.pairIndex] || [],
-    pairs,
-  };
-}
-
-function pairIsComplete(pair) {
-  return pair.every((question) => Boolean(state.answers[question.id]));
-}
-
 function renderQuestionScreen() {
-  const { branchKey, pair, pairs } = currentPairState();
-  const lastPair = state.pairIndex === pairs.length - 1;
+  const questions = currentScreenQuestions();
+  const lastScreen = state.screenIndex === QUESTION_SCREENS.length - 1;
 
   return `
     ${renderProgress()}
     <section class="blueprint-panel blueprint-question-panel">
       <div class="blueprint-panel-topline">
         <div>
-          <p class="section-tag">Question set ${state.pairIndex + 1} of ${pairs.length}</p>
-          <h2>${branchFamilies[branchKey].label}</h2>
+          <p class="section-tag">Question block ${state.screenIndex + 1} of ${QUESTION_SCREENS.length}</p>
+          <h2>${activeStageLabel()}</h2>
         </div>
-        <p class="blueprint-branch-note">Two questions per screen. Premium diagnostic. No score theatre.</p>
+        <p class="blueprint-branch-note">Stable 9-question flow. No variable public question count.</p>
       </div>
-      <div class="blueprint-question-grid">
-        ${pair.map(renderQuestionCard).join('')}
+      <div class="blueprint-question-grid ${questions.length === 1 ? 'is-single' : ''}">
+        ${questions.map(renderQuestionCard).join('')}
       </div>
       <div class="blueprint-actions">
         <button class="button button-secondary" type="button" data-action="back-question">Back</button>
-        <button class="button button-primary" type="button" data-action="next-question" ${pairIsComplete(pair) ? '' : 'disabled'}>
-          ${lastPair ? 'Continue to Blueprint' : 'Continue'}
+        <button class="button button-primary" type="button" data-action="next-question" ${screenComplete() ? '' : 'disabled'}>
+          ${lastScreen ? 'Continue to Blueprint' : 'Continue'}
         </button>
       </div>
     </section>
   `;
 }
 
-function gateSession() {
+function previewSession() {
   return buildBlueprintSession(state.answers, state.identity);
 }
 
 function renderGate() {
-  const previewSession = gateSession();
+  const session = previewSession();
+  const severityChipClass = session.result_page_model.severity_band.replace('_', '-');
 
   return `
     ${renderProgress()}
     <section class="blueprint-panel blueprint-gate-panel">
       <div class="blueprint-gate-copy">
         <p class="section-tag">Your Blueprint is ready</p>
-        <h2>${previewSession.gateSentence}</h2>
-        <div class="blueprint-severity-chip severity-${previewSession.severityCue.toLowerCase()}">${previewSession.severityCue}</div>
+        <h2>${session.gate_diagnosis_sentence}</h2>
+        <div class="blueprint-severity-chip severity-${severityChipClass}">${session.result_page_model.severity_band}</div>
         <ul class="blueprint-preview-list gate-preview-list">
-          ${previewSession.preview.map((item) => `<li>${item}</li>`).join('')}
+          ${session.gate_preview_bullets.map((item) => `<li>${item}</li>`).join('')}
         </ul>
         <div class="blueprint-gate-trust">
           <p>No spam. No newsletter bait.</p>
@@ -263,9 +236,24 @@ function renderGate() {
   `;
 }
 
+function renderReasonList(items, type) {
+  if (!items.length) return '';
+  return `
+    <details class="blueprint-local-note">
+      <summary>${type === 'reasons' ? 'Why this route was chosen' : 'Mixed-signal notes'}</summary>
+      <ul class="blueprint-reason-list">
+        ${items.map((item) => `<li>${item}</li>`).join('')}
+      </ul>
+    </details>
+  `;
+}
+
 function renderResults() {
   const { session, emailDelivery } = state;
-  const breakdownMarkup = session.breakdowns
+  const model = session.result_page_model;
+  const severityChipClass = model.severity_band.replace('_', '-');
+
+  const breakdownMarkup = model.top_breakdowns
     .map(
       (item) => `
         <article class="blueprint-breakdown-card">
@@ -276,63 +264,73 @@ function renderResults() {
     )
     .join('');
 
+  const reasonText = session.classification.route_reason_codes.map((code) => session.route_reason_code_labels?.[code] || code.replaceAll('_', ' '));
+  const conflictText = session.classification.conflict_flags.map((code) => session.conflict_flag_labels?.[code] || code.replaceAll('_', ' '));
+
   return `
     ${renderProgress()}
     <section class="blueprint-panel blueprint-results-panel">
       <div class="blueprint-results-hero">
         <div>
           <p class="section-tag">Blueprint summary</p>
-          <h2>${session.headline}</h2>
-          <p class="blueprint-result-lead">${session.recommendationText}</p>
+          <h2>${model.headline_diagnosis}</h2>
+          <p class="blueprint-result-lead">${model.primary_recommendation}</p>
         </div>
         <div class="blueprint-results-meta">
           <div class="blueprint-meta-card">
-            <span>Severity cue</span>
-            <strong>${session.severityCue}</strong>
+            <span>Severity</span>
+            <strong><span class="blueprint-inline-chip severity-${severityChipClass}">${model.severity_band}</span></strong>
           </div>
           <div class="blueprint-meta-card">
-            <span>Urgency read</span>
-            <strong>${session.urgencyRead}</strong>
+            <span>Urgency</span>
+            <strong>${model.urgency_read.replaceAll('_', ' ')}</strong>
           </div>
           <div class="blueprint-meta-card">
-            <span>Primary recommendation</span>
-            <strong>${session.recommendation}</strong>
+            <span>Primary route</span>
+            <strong>${ROUTE_LABELS[model.route]}</strong>
+          </div>
+          <div class="blueprint-meta-card">
+            <span>Confidence</span>
+            <strong>${model.confidence_band.replaceAll('_', ' ')}</strong>
           </div>
         </div>
       </div>
 
       <div class="blueprint-results-grid">
         <section>
-          <p class="card-kicker">Top 3 breakdowns</p>
+          <p class="card-kicker">Top breakdowns</p>
           <div class="blueprint-breakdown-grid">${breakdownMarkup}</div>
         </section>
         <section class="blueprint-insight-card">
-          <p class="card-kicker">Why the current setup is missing it</p>
-          <p>${session.whyMissed}</p>
+          <p class="card-kicker">Why the current setup is missing the problem</p>
+          <p>${model.why_current_setup_misses_it}</p>
         </section>
         <section class="blueprint-insight-card">
-          <p class="card-kicker">What should come first</p>
-          <p>${session.recommendationText}</p>
-          ${session.sequence ? `<p class="blueprint-sequence-note">${session.sequence}</p>` : ''}
+          <p class="card-kicker">What should happen first</p>
+          <p>${model.primary_recommendation}</p>
+          ${model.sequence_note_optional ? `<p class="blueprint-sequence-note">${model.sequence_note_optional}</p>` : ''}
         </section>
       </div>
 
+      ${renderReasonList(reasonText, 'reasons')}
+      ${renderReasonList(conflictText, 'conflicts')}
+
       <div class="blueprint-trust-footer">
-        <p>Recommendations are based on the pattern in your answers, not a full system audit.</p>
-        <p>Trackt is only recommended when earlier visibility appears to be the sharpest problem.</p>
-        <p>The Blueprint does not assume software is the answer every time.</p>
+        <p>${model.disclaimer_line}</p>
+        <p>Trackt remains positioned as a communication and follow-through risk visibility product. It is not an inbox cleanup tool, generic CRM, task manager, or generic productivity app.</p>
       </div>
 
       <div class="blueprint-primary-cta-wrap">
-        <a class="button button-primary blueprint-primary-button" href="${session.primaryCta.href}" target="_blank" rel="noopener noreferrer">${session.primaryCta.label}</a>
+        <a class="button button-primary blueprint-primary-button" href="${model.cta.href}" target="_blank" rel="noopener noreferrer">${model.cta.label}</a>
         <p class="blueprint-trust-line">Only one next step is shown on purpose. Clarity beats option overload.</p>
       </div>
 
       <details class="blueprint-local-note">
         <summary>Local test notes</summary>
         <p>${emailDelivery?.message || ''}</p>
-        <p>CRM-ready payload saved to localStorage key <code>aaryx-blueprint-payload-v1</code>.</p>
-        <p>Email report draft saved to localStorage key <code>aaryx-blueprint-report-v1</code>.</p>
+        <p>Assessment version: <code>${ASSESSMENT_VERSION}</code></p>
+        <p>CRM-ready payload saved to localStorage key <code>aaryx-blueprint-payload-v2</code>.</p>
+        <p>Email report draft saved to localStorage key <code>aaryx-blueprint-report-v2</code>.</p>
       </details>
     </section>
   `;
@@ -343,42 +341,43 @@ function render() {
     app.innerHTML = renderEntry();
     return;
   }
-
   if (state.step === 'questions') {
     app.innerHTML = renderQuestionScreen();
     return;
   }
-
   if (state.step === 'gate') {
     app.innerHTML = renderGate();
     return;
   }
-
   app.innerHTML = renderResults();
 }
 
 function startAssessment() {
   state.step = 'questions';
-  state.pairIndex = 0;
+  state.screenIndex = 0;
+  render();
+}
+
+function setAnswer(questionId, value) {
+  state.answers[questionId] = value;
   render();
 }
 
 function goBackQuestion() {
-  if (state.pairIndex === 0) {
+  if (state.screenIndex === 0) {
     state.step = 'entry';
   } else {
-    state.pairIndex -= 1;
+    state.screenIndex -= 1;
   }
   render();
 }
 
 function goNextQuestion() {
-  const { pair, pairs } = currentPairState();
-  if (!pairIsComplete(pair)) return;
-  if (state.pairIndex === pairs.length - 1) {
+  if (!screenComplete()) return;
+  if (state.screenIndex === QUESTION_SCREENS.length - 1) {
     state.step = 'gate';
   } else {
-    state.pairIndex += 1;
+    state.screenIndex += 1;
   }
   render();
 }
@@ -403,8 +402,7 @@ function submitGate(form) {
   const emailField = form.querySelector('input[name="email"]');
   emailField?.setCustomValidity('');
 
-  state.identity.email = email;
-  state.identity.firstName = firstName;
+  state.identity = { firstName, email };
   state.session = buildBlueprintSession(state.answers, state.identity);
   state.payload = buildPayload(state.session);
   state.report = buildReport(state.session, state.payload);
@@ -416,11 +414,9 @@ function submitGate(form) {
 
 function restart() {
   state.step = 'entry';
-  state.pairIndex = 0;
+  state.screenIndex = 0;
   state.answers = {};
   state.identity = { firstName: '', email: '' };
-  state.branchKey = null;
-  state.trustSensitiveOverride = false;
   state.session = null;
   state.payload = null;
   state.report = null;
@@ -441,7 +437,6 @@ app.addEventListener('click', (event) => {
   if (!(target instanceof HTMLElement)) return;
   const button = target.closest('[data-action]');
   if (!button) return;
-
   const action = button.getAttribute('data-action');
   if (action === 'start') startAssessment();
   if (action === 'back-question') goBackQuestion();
@@ -468,7 +463,8 @@ if (restored.session && restored.payload && restored.report) {
 
 window.__AARYX_BLUEPRINT__ = {
   getState: () => structuredClone(state),
-  ctaRoutes,
+  questions: QUESTIONS,
+  ctaRoutes: CTA_ROUTES,
 };
 
 render();
