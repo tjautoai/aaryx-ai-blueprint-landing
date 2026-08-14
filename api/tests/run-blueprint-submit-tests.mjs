@@ -166,7 +166,7 @@ global.fetch = async (url, options = {}) => {
   if (duplicateFetchCount === 1) {
     return jsonResponse(409, { message: 'duplicate key value violates unique constraint on assessment_id' });
   }
-  return jsonResponse(200, [mappedRow]);
+  return jsonResponse(200, [{ ...mappedRow, submitted_at: '2026-08-14T12:34:56+00:00' }]);
 };
 const duplicate = await invoke(payload);
 assert.equal(duplicate.status, 200, 'matching duplicate should be treated as idempotent success');

@@ -150,8 +150,24 @@ export function stableStringify(value) {
   return JSON.stringify(value);
 }
 
+function normalizeIsoTimestamp(value) {
+  const text = cleanText(value);
+  if (!text) return text;
+  const parsed = Date.parse(text);
+  if (Number.isNaN(parsed)) return text;
+  return new Date(parsed).toISOString();
+}
+
+function normalizeRowForComparison(row) {
+  if (!isObject(row)) return row;
+  return {
+    ...row,
+    submitted_at: normalizeIsoTimestamp(row.submitted_at),
+  };
+}
+
 export function rowsAreEquivalent(a, b) {
-  return stableStringify(a) === stableStringify(b);
+  return stableStringify(normalizeRowForComparison(a)) === stableStringify(normalizeRowForComparison(b));
 }
 
 export function buildSupabaseInsertRequest(row) {
