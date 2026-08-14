@@ -2,6 +2,11 @@
   "name": "aaryx-ai-site-local-qa",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test:blueprint": "node blueprint/tests/run-blueprint-tests.mjs",
+    "test:blueprint-submit": "node api/tests/run-blueprint-submit-tests.mjs",
+    "test:blueprint-all": "npm run test:blueprint && npm run test:blueprint-submit"
+  },
   "devDependencies": {
     "playwright": "^1.55.0"
   }

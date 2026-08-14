@@ -3,9 +3,12 @@ import {
   buildBlueprintSession,
   buildPayload,
   buildReport,
+  clearBlueprintDraft,
   persistBlueprintArtifacts,
+  persistBlueprintDraft,
   queueEmailReport,
   restoreBlueprintArtifacts,
+  restoreBlueprintDraft,
 } from './logic.js';
 
 const app = document.getElementById('blueprint-app');
@@ -16,8 +19,15 @@ const state = {
   answers: {},
   identity: {
     firstName: '',
+    lastName: '',
     email: '',
   },
+  submissionMeta: {
+    assessmentId: '',
+    submittedAt: '',
+  },
+  gateError: '',
+  gatePending: false,
   session: null,
   payload: null,
   report: null,
@@ -99,6 +109,62 @@ function renderProgress() {
       </div>
     </section>
   `;
+}
+
+function snapshotDraft() {
+  return {
+    step: state.step,
+    screenIndex: state.screenIndex,
+    answers: state.answers,
+    identity: state.identity,
+    submissionMeta: state.submissionMeta,
+  };
+}
+
+function persistCurrentDraft() {
+  persistBlueprintDraft(snapshotDraft());
+}
+
+function clearGateError() {
+  state.gateError = '';
+}
+
+function inlineErrorMarkup() {
+  if (!state.gateError) return '';
+  return `<p class="blueprint-trust-line" role="alert">${state.gateError}</p>`;
+}
+
+function ensureSubmissionMeta() {
+  if (!state.submissionMeta.assessmentId) {
+    state.submissionMeta.assessmentId = crypto.randomUUID();
+  }
+  if (!state.submissionMeta.submittedAt) {
+    state.submissionMeta.submittedAt = new Date().toISOString();
+  }
+  persistCurrentDraft();
+}
+
+async function submitBlueprintPayload(payload) {
+  const response = await fetch('/api/blueprint-submit', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!response.ok || !data?.ok) {
+    const details = Array.isArray(data?.details) ? ` ${data.details.join(' ')}` : '';
+    const message = data?.error || 'Blueprint persistence failed.';
+    const error = new Error(`${message}${details}`.trim());
+    error.retryable = Boolean(data?.retryable);
+    throw error;
+  }
+
+  return data;
 }
 
 function renderEntry() {
@@ -220,17 +286,22 @@ function renderGate() {
           <p>We are not asking for inbox access in this assessment.</p>
         </div>
       </div>
-      <form class="blueprint-email-form" id="blueprint-email-form">
+      <form class="blueprint-email-form" id="blueprint-email-form" novalidate>
         <label>
-          <span>Work email</span>
-          <input type="email" name="email" value="${state.identity.email}" placeholder="you@company.com" required />
+          <span>First Name</span>
+          <input type="text" name="firstName" value="${state.identity.firstName}" placeholder="Tejas" required autocomplete="given-name" />
         </label>
         <label>
-          <span>First name <small>Optional</small></span>
-          <input type="text" name="firstName" value="${state.identity.firstName}" placeholder="Tejas" />
+          <span>Last Name</span>
+          <input type="text" name="lastName" value="${state.identity.lastName}" placeholder="Desai" required autocomplete="family-name" />
         </label>
-        <button class="button button-primary blueprint-primary-button" type="submit">Show My Blueprint</button>
-        <p class="blueprint-trust-line">We’ll send your result and a copy of your report. No spam. No newsletter bait. This assessment is designed to determine fit first, not push you into the wrong solution.</p>
+        <label>
+          <span>Work Email</span>
+          <input type="email" name="email" value="${state.identity.email}" placeholder="you@company.com" required autocomplete="email" inputmode="email" />
+        </label>
+        ${inlineErrorMarkup()}
+        <button class="button button-primary blueprint-primary-button" type="submit" ${state.gatePending ? 'disabled' : ''}>${state.gatePending ? 'Saving Blueprint...' : 'Show My Blueprint'}</button>
+        <p class="blueprint-trust-line">We’ll unlock your result after your Blueprint is saved. No spam. No newsletter bait. This assessment is designed to determine fit first, not push you into the wrong solution.</p>
       </form>
     </section>
   `;
@@ -355,11 +426,15 @@ function render() {
 function startAssessment() {
   state.step = 'questions';
   state.screenIndex = 0;
+  clearGateError();
+  persistCurrentDraft();
   render();
 }
 
 function setAnswer(questionId, value) {
   state.answers[questionId] = value;
+  clearGateError();
+  persistCurrentDraft();
   render();
 }
 
@@ -369,6 +444,8 @@ function goBackQuestion() {
   } else {
     state.screenIndex -= 1;
   }
+  clearGateError();
+  persistCurrentDraft();
   render();
 }
 
@@ -379,6 +456,8 @@ function goNextQuestion() {
   } else {
     state.screenIndex += 1;
   }
+  clearGateError();
+  persistCurrentDraft();
   render();
 }
 
@@ -386,41 +465,85 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-function submitGate(form) {
+function validateRequiredText(value) {
+  return String(value || '').trim().length > 0;
+}
+
+async function submitGate(form) {
   const formData = new FormData(form);
-  const email = String(formData.get('email') || '').trim();
   const firstName = String(formData.get('firstName') || '').trim();
+  const lastName = String(formData.get('lastName') || '').trim();
+  const email = String(formData.get('email') || '').trim();
+
+  clearGateError();
+
+  const firstNameField = form.querySelector('input[name="firstName"]');
+  const lastNameField = form.querySelector('input[name="lastName"]');
+  const emailField = form.querySelector('input[name="email"]');
+
+  firstNameField?.setCustomValidity('');
+  lastNameField?.setCustomValidity('');
+  emailField?.setCustomValidity('');
+
+  if (!validateRequiredText(firstName)) {
+    firstNameField?.focus();
+    firstNameField?.setCustomValidity('Enter your first name.');
+    firstNameField?.reportValidity();
+    return;
+  }
+
+  if (!validateRequiredText(lastName)) {
+    lastNameField?.focus();
+    lastNameField?.setCustomValidity('Enter your last name.');
+    lastNameField?.reportValidity();
+    return;
+  }
 
   if (!validateEmail(email)) {
-    const emailField = form.querySelector('input[name="email"]');
     emailField?.focus();
     emailField?.setCustomValidity('Enter a valid work email.');
     emailField?.reportValidity();
     return;
   }
 
-  const emailField = form.querySelector('input[name="email"]');
-  emailField?.setCustomValidity('');
-
-  state.identity = { firstName, email };
-  state.session = buildBlueprintSession(state.answers, state.identity);
-  state.payload = buildPayload(state.session);
-  state.report = buildReport(state.session, state.payload);
-  state.emailDelivery = queueEmailReport(state.report);
-  persistBlueprintArtifacts(state.session, state.payload, state.report);
-  state.step = 'results';
+  state.identity = { firstName, lastName, email };
+  ensureSubmissionMeta();
+  state.gatePending = true;
+  persistCurrentDraft();
   render();
+
+  try {
+    state.session = buildBlueprintSession(state.answers, state.identity);
+    state.payload = buildPayload(state.session, state.submissionMeta);
+    state.report = buildReport(state.session, state.payload);
+    persistBlueprintArtifacts(state.session, state.payload, state.report);
+    persistCurrentDraft();
+    await submitBlueprintPayload(state.payload);
+    state.emailDelivery = queueEmailReport(state.report);
+    state.gatePending = false;
+    state.step = 'results';
+    render();
+  } catch (error) {
+    state.gatePending = false;
+    state.gateError = error instanceof Error ? error.message : 'Blueprint persistence failed.';
+    persistCurrentDraft();
+    render();
+  }
 }
 
 function restart() {
   state.step = 'entry';
   state.screenIndex = 0;
   state.answers = {};
-  state.identity = { firstName: '', email: '' };
+  state.identity = { firstName: '', lastName: '', email: '' };
+  state.submissionMeta = { assessmentId: '', submittedAt: '' };
+  state.gateError = '';
+  state.gatePending = false;
   state.session = null;
   state.payload = null;
   state.report = null;
   state.emailDelivery = null;
+  clearBlueprintDraft();
   render();
 }
 
@@ -430,6 +553,18 @@ app.addEventListener('change', (event) => {
   if (input.type === 'radio' && input.dataset.question) {
     setAnswer(input.dataset.question, input.value);
   }
+});
+
+app.addEventListener('input', (event) => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
+  if (input.form?.id !== 'blueprint-email-form') return;
+  state.identity = {
+    ...state.identity,
+    [input.name]: input.value,
+  };
+  clearGateError();
+  persistCurrentDraft();
 });
 
 app.addEventListener('click', (event) => {
@@ -459,6 +594,15 @@ if (restored.session && restored.payload && restored.report) {
   state.payload = restored.payload;
   state.report = restored.report;
   state.identity = restored.session.identity || state.identity;
+}
+
+const draft = restoreBlueprintDraft();
+if (draft) {
+  state.step = draft.step || state.step;
+  state.screenIndex = Number.isInteger(draft.screenIndex) ? draft.screenIndex : state.screenIndex;
+  state.answers = draft.answers || state.answers;
+  state.identity = { ...state.identity, ...(draft.identity || {}) };
+  state.submissionMeta = { ...state.submissionMeta, ...(draft.submissionMeta || {}) };
 }
 
 window.__AARYX_BLUEPRINT__ = {

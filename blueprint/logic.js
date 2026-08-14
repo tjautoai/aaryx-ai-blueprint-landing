@@ -605,12 +605,15 @@ export function buildBlueprintSession(answers, identity = {}) {
   };
 }
 
-export function buildPayload(session) {
+export function buildPayload(session, submissionMeta = {}) {
   const { answers, identity, derived, classification, result_page_model } = session;
+  const assessment_id = submissionMeta.assessmentId || crypto.randomUUID();
+  const submitted_at = submissionMeta.submittedAt || new Date().toISOString();
 
   const crm_payload = {
-    first_name_optional: identity.firstName || '',
-    email: identity.email || '',
+    first_name: identity.firstName || '',
+    last_name: identity.lastName || '',
+    work_email: identity.email || '',
     blueprint_role_type: answers.q1,
     blueprint_people_affecting_next_step: answers.q2,
     blueprint_biggest_problem: answers.q3,
@@ -642,9 +645,14 @@ export function buildPayload(session) {
   };
 
   return {
-    assessment_id: crypto.randomUUID(),
+    assessment_id,
     assessment_version: ASSESSMENT_VERSION,
-    submitted_at: new Date().toISOString(),
+    submitted_at,
+    identity: {
+      firstName: identity.firstName || '',
+      lastName: identity.lastName || '',
+      email: identity.email || '',
+    },
     answers: {
       role_type: answers.q1,
       people_affecting_next_step: answers.q2,
@@ -731,6 +739,22 @@ export function persistBlueprintArtifacts(session, payload, report) {
   localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(session));
   localStorage.setItem(STORAGE_KEYS.payload, JSON.stringify(payload));
   localStorage.setItem(STORAGE_KEYS.report, JSON.stringify(report));
+}
+
+export function persistBlueprintDraft(draft) {
+  localStorage.setItem(STORAGE_KEYS.draft, JSON.stringify(draft));
+}
+
+export function clearBlueprintDraft() {
+  localStorage.removeItem(STORAGE_KEYS.draft);
+}
+
+export function restoreBlueprintDraft() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEYS.draft) || 'null');
+  } catch {
+    return null;
+  }
 }
 
 export function restoreBlueprintArtifacts() {

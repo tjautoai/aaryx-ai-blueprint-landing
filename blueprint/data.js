@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   session: 'aaryx-blueprint-session-v2',
   payload: 'aaryx-blueprint-payload-v2',
   report: 'aaryx-blueprint-report-v2',
+  draft: 'aaryx-blueprint-draft-v2',
 };
 
 const option = (value, label, meta = {}) => ({
