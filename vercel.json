@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/blueprint.html",
+      "destination": "/blueprint/",
+      "permanent": true
+    }
+  ]
+}
