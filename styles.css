@@ -838,6 +838,18 @@ p {
   margin-top: 8px;
 }
 
+.legal-content p,
+.legal-content li {
+  font-size: 1.04rem;
+  line-height: 1.74;
+}
+
+.legal-content a {
+  font-weight: 700;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 .legal-grid {
   display: grid;
   gap: 18px;

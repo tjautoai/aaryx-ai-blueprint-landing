@@ -7,8 +7,9 @@
 - V1.1 remains isolated on `feat/first-fix-lead-funnel`.
 - Existing production Vercel project linkage restored locally. No deployment was made.
 - New founder photo confirmed as progressive JPEG, 1536 x 1023, and referenced by the V1.1 homepage and About metadata.
-- First Look and Blueprint automated test suites passed before retained-site shell work.
-- V1.1 retained-page shell, unified navigation/footer, GTM gap repair, static Blueprint introduction, JSON-LD repair, and legacy Blueprint redirect configuration prepared locally.
+- First Look and Blueprint automated test suites passed after final corrections.
+- Full retained-page local QA completed: 24/24 matrix routes passed desktop/mobile automated validation. Evidence: `qa/retained-page-audit.md` and `LOCAL_QA_REPORT.md`.
+- Privacy/Terms readability, duplicate mobile Start Here control, mobile header label mismatch, service-page First Look conversion routing, Blueprint hierarchy, Recruiters internal link, and First-Fix Review booking CTA were corrected locally.
 
 ## Required preview QA
 

@@ -14,6 +14,9 @@ Status: audited read-only. No database query, migration, storage upload, policy 
 
 Migration file: `supabase/migrations/20261012_first_look_funnel.sql`
 
+- `supabase/READ_ONLY_PREFLIGHT.sql` is the required no-PII preflight for the exact Blueprint count, First Look name collisions, existing target bucket configuration/object count, Blueprint-related bucket inventory, and trigger collisions.
+- The migration now leaves an existing `aaryx-private-guides` bucket untouched. A preflight must prove an existing bucket is already private, PDF-only, and owned by this release before any upload.
+
 - `public.first_look_leads`: normalized lead identity, first name, work email, current consent state.
 - `public.first_look_consent_events`: append-only marketing consent history.
 - `public.first_look_guide_requests`: append-only guide request/delivery history, idempotency UUID, request-IP hash, delivery status and bounded attempt count.

@@ -76,7 +76,9 @@ alter table public.first_look_guide_requests enable row level security;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('aaryx-private-guides', 'aaryx-private-guides', false, 10485760, array['application/pdf'])
-on conflict (id) do update set public = false, file_size_limit = 10485760, allowed_mime_types = array['application/pdf'];
+on conflict (id) do nothing;
+-- A live preflight must verify that an existing bucket of this name is already private,
+-- PDF-only, and owned by this release. Never silently alter an existing bucket.
 -- No storage.objects SELECT policy is created. Only server-side service-role code may download PDFs.
 
 create or replace view public.first_look_lead_request_report
