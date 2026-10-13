@@ -23,7 +23,7 @@ No currently verified configuration can honestly claim to send from or receive r
 
 ## Conditional Resend fallback
 
-Resend’s current official pricing shows a free-forever tier at $0 per month with 3,000 transactional emails per month, a 100-email daily limit, up to three verified domains, and email authentication features. Its terms state that billing information is not required for the Free Tier. This makes Resend a plausible zero-additional-cost sending option only after an existing or newly authorized account is inspected, a domain or dedicated sending subdomain is verified, pay-as-you-go is left disabled, and replies are routed to a real monitored inbox. The exact account state and sender eligibility are unverified today.
+Resend’s current official pricing shows a free-forever tier at $0 per month with 3,000 transactional emails per month, a 100-email daily limit, up to three verified domains, and email authentication features. This makes Resend a plausible zero-additional-cost sending option only after an existing or newly authorized account is inspected, a domain or dedicated sending subdomain is verified, pay-as-you-go remains unavailable or disabled, and replies are routed to a real monitored inbox. The exact account state, billing requirements, and sender eligibility are unverified today.
 
 ## Required decision gate
 
