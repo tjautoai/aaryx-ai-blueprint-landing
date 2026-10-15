@@ -8,6 +8,7 @@ const read = relativePath => fs.readFileSync(path.join(repo, relativePath), 'utf
 
 const redirects = JSON.parse(read('vercel.json')).redirects;
 const expectedRedirects = new Map([
+  ['/blueprint/', 'https://www.aaryxai.com/'],
   ['/blueprint/:path*', 'https://www.aaryxai.com/'],
   ['/blueprint.html', 'https://www.aaryxai.com/'],
 ]);
