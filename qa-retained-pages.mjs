@@ -2,9 +2,9 @@ import { chromium } from 'playwright';
 import fs from 'node:fs/promises';
 
 const base = process.env.QA_BASE_URL || 'http://127.0.0.1:3000';
-const outputDir = new URL('./releases/v1.1/qa/', import.meta.url).pathname;
+const outputDir = process.env.QA_OUTPUT_DIR || new URL('./releases/v1.1/qa/', import.meta.url).pathname;
 const paths = [
-  '/', '/blueprint/', '/blueprint.html', '/about.html', '/how-aaryx-works.html',
+  '/', '/about.html', '/how-aaryx-works.html',
   '/proof.html', '/resources.html', '/privacy.html', '/terms.html',
   '/ai-consulting-services.html', '/ai-automation-services.html',
   '/workflow-automation-services.html', '/ai-implementation-services.html',
@@ -32,6 +32,7 @@ for (const path of paths) {
     }).filter(Boolean);
     const images = [...document.images].filter(image => !image.complete || image.naturalWidth === 0).map(image => image.currentSrc || image.src);
     const anchors = [...document.querySelectorAll('a[href]')].map(anchor => anchor.href).filter(href => href.startsWith(location.origin));
+    const retiredBlueprintLinks = anchors.filter(href => new URL(href).pathname === '/blueprint/' || new URL(href).pathname === '/blueprint.html');
     const analytics = [...document.querySelectorAll('[data-analytics-event]')].map(node => node.getAttribute('data-analytics-event'));
     return {
       title: document.title,
@@ -45,6 +46,7 @@ for (const path of paths) {
       invalidJsonLd,
       images,
       internalAnchors: [...new Set(anchors)],
+      retiredBlueprintLinks: [...new Set(retiredBlueprintLinks)],
       analytics,
     };
   });
@@ -78,6 +80,7 @@ for (const path of paths) {
   if (desktop.horizontalOverflow || mobile.horizontalOverflow) failures.push('horizontal overflow');
   if (desktop.invalidJsonLd.length) failures.push('invalid JSON-LD');
   if (desktop.images.length) failures.push('broken image');
+  if (desktop.retiredBlueprintLinks.length) failures.push('retired Blueprint internal link');
   if (errors.length) failures.push('page error');
   if (failedLinks.length) failures.push('broken internal link');
   if (desktop.analytics.some(event => /@|email|name/i.test(event))) failures.push('analytics event may contain PII');
@@ -94,6 +97,7 @@ for (const path of paths) {
     mobileOverflow: mobile.horizontalOverflow,
     invalidJsonLd: desktop.invalidJsonLd.length,
     brokenImages: desktop.images,
+    retiredBlueprintLinks: desktop.retiredBlueprintLinks,
     pageErrors: errors,
     brokenInternalLinks: failedLinks,
     failures,

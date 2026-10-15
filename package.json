@@ -6,7 +6,8 @@
     "test:blueprint": "node blueprint/tests/run-blueprint-tests.mjs",
     "test:blueprint-submit": "node api/tests/run-blueprint-submit-tests.mjs",
     "test:first-look": "node api/tests/run-first-look-tests.mjs && node api/tests/run-first-look-endpoint-tests.mjs",
-    "test:blueprint-all": "npm run test:blueprint && npm run test:blueprint-submit"
+    "test:blueprint-all": "npm run test:blueprint && npm run test:blueprint-submit",
+    "test:blueprint-retirement": "node tests/run-blueprint-retirement-tests.mjs"
   },
   "devDependencies": {
     "playwright": "^1.55.0"

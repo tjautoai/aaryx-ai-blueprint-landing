@@ -1,8 +1,13 @@
 {
   "redirects": [
     {
+      "source": "/blueprint/:path*",
+      "destination": "https://www.aaryxai.com/",
+      "permanent": true
+    },
+    {
       "source": "/blueprint.html",
-      "destination": "/blueprint/",
+      "destination": "https://www.aaryxai.com/",
       "permanent": true
     }
   ]

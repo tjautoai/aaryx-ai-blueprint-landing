@@ -10,7 +10,8 @@
 - First Look and Blueprint automated test suites passed after final corrections.
 - Founder-reported Supabase migration execution completed successfully in project `xiwxprgohdwphgrkyusl`. Founder reports the post-migration security gate passed 9/9, the three First Look tables and reporting view exist, `aaryx-private-guides` remains private/PDF-only/10 MiB, and exactly four approved PDFs were uploaded under `first-fix/`. The supplied visible legacy result remains `blueprint_submissions_count = 0`. Direct Supabase read access is still unavailable in this runtime, so uploaded object names, metadata, object count, and hashes remain pending independent verification through `supabase/UPLOADED_GUIDES_READ_ONLY_VERIFICATION.sql` plus authorized downloads.
 - Full retained-page local QA completed: 24/24 matrix routes passed desktop/mobile automated validation. Evidence: `qa/retained-page-audit.md` and `LOCAL_QA_REPORT.md`.
-- Privacy/Terms readability, duplicate mobile Start Here control, mobile header label mismatch, service-page First Look conversion routing, Blueprint hierarchy, Recruiters internal link, and First-Fix Review booking CTA were corrected locally.
+- Privacy/Terms readability, duplicate mobile Start Here control, mobile header label mismatch, service-page First Look conversion routing, legacy Blueprint retirement, Recruiters internal link, and First-Fix Review booking CTA were corrected locally.
+- Legacy Blueprint assessment retirement: public navigation, CTAs, internal links, public marketing copy, and sitemap no longer expose Blueprint. `/blueprint/` and `/blueprint.html` are configured as permanent redirects to `https://www.aaryxai.com/`. Historical code/table/rollback assets remain preserved. Evidence: `BLUEPRINT_RETIREMENT.md`.
 
 ## Required preview QA
 
