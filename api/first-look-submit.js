@@ -18,6 +18,7 @@ function configured() {
       process.env.AARYX_FIRST_LOOK_SUPABASE_SERVICE_ROLE_KEY &&
       process.env.RESEND_API_KEY &&
       process.env.FIRST_FIX_EMAIL_FROM &&
+      process.env.FIRST_FIX_EMAIL_REPLY_TO &&
       process.env.FIRST_FIX_RATE_LIMIT_SALT,
   );
 }
@@ -187,6 +188,7 @@ async function sendEmail({ email, firstName, guide }) {
     headers: { authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'content-type': 'application/json' },
     body: JSON.stringify({
       from: process.env.FIRST_FIX_EMAIL_FROM,
+      reply_to: process.env.FIRST_FIX_EMAIL_REPLY_TO,
       to: [email],
       subject: `Your AARYX First-Fix Guide: ${guide.title}`,
       html: emailHtml({ firstName, guideTitle: guide.title }),

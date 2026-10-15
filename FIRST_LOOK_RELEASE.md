@@ -8,7 +8,7 @@ Status: staged implementation only. Do not deploy or merge without human review.
 - API: `POST /api/first-look-submit` validates only the four approved problem keys and guide IDs.
 - Storage: PDFs belong only in the private Supabase Storage bucket `aaryx-private-guides` at the exact paths in `api/_lib/first-look.js`.
 - Database: migration `supabase/migrations/20261012_first_look_funnel.sql` creates isolated First Look tables and reporting view. Blueprint tables/routes are untouched.
-- Delivery: server downloads the selected PDF from private storage and sends it as a Resend attachment from `aaryxaiteam@gmail.com` after Resend domain/sender verification.
+- Delivery: server downloads the selected PDF from private storage and sends it as a Resend attachment from `AARYX AI <guides@aaryxai.com>` after Resend domain verification. Replies route to the existing monitored inbox `aaryxaiteam@gmail.com` through the explicit server-side Reply-To field.
 
 ## Required configuration before preview or production testing
 
@@ -18,7 +18,7 @@ Status: staged implementation only. Do not deploy or merge without human review.
    - `first-fix/02-the-stalled-work-recovery-guide.pdf`
    - `first-fix/03-the-founder-bottleneck-fix-guide.pdf`
    - `first-fix/04-the-disconnected-tools-fix-guide.pdf`
-3. Verify a Resend sender/domain that can send as `AARYX AI <aaryxaiteam@gmail.com>`. Gmail/Composio is intentionally not used by the serverless site because it is an interactive integration, not a durable unattended transactional-email runtime.
+3. Verify the `aaryxai.com` Resend domain and sender `AARYX AI <guides@aaryxai.com>`. Configure `FIRST_FIX_EMAIL_REPLY_TO=aaryxaiteam@gmail.com`. Gmail/Composio is intentionally not used by the serverless site because it is an interactive integration, not a durable unattended transactional-email runtime.
 4. Set every server-side environment variable from `.env.first-look.example` in the isolated Vercel preview environment only.
 5. Confirm the `FIRST_FIX_ALLOWED_ORIGINS` list contains the actual preview URL. Do not add arbitrary origins.
 6. Review the proposed First Look privacy disclosure in `privacy.html` before release.

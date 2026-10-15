@@ -29,4 +29,3 @@ Total: 24. Passed: 24. Failed: 0.
 | /ai-automation-for-consultants.html | PASS | 200 | 1 | yes | no | no | 0 | 0 |
 | /ai-automation-for-accountants.html | PASS | 200 | 1 | yes | no | no | 0 | 0 |
 | /ai-automation-for-law-firms.html | PASS | 200 | 1 | yes | no | no | 0 | 0 |
-

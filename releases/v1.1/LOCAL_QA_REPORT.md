@@ -1,7 +1,7 @@
 # AARYX AI V1.1 Local QA Report
 
-Date: 2026-10-12
-Scope: local release candidate only. No GitHub push, Vercel deployment, production alias, database, storage, provider, DNS, or email action occurred.
+Date: 2026-10-13
+Scope: local release candidate verification plus read-only preview deployment inspection. The branch and `v1.1.0-rc.2` tag were pushed previously under explicit founder authorization, which created a Ready Vercel Preview. No production alias, database, storage, provider, DNS, or email action occurred.
 
 ## Result
 
