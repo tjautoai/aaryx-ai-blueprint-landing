@@ -1,6 +1,6 @@
 # AARYX AI First Look Data-Rights Runbook
 
-Status: Proposed operating procedure. Founder approval required before use.
+Status: Founder approved for launch operations on 2026-10-16. This is an operational policy, not a legal certification.
 
 ## Scope and ownership
 
@@ -13,8 +13,9 @@ Status: Proposed operating procedure. Founder approval required before use.
 ## Intake and minimal request log
 
 1. Receive the request at `aaryxaiteam@gmail.com`.
-2. Record only: request ID, received timestamp, request type, requester email, verification status, owner, status, response date, and any approved exception. Do not copy unnecessary email content or database records into the log.
+2. Record only in the restricted local log at `/home/leiat/AARYX/workspace/aaryx_v1_1_privacy_requests/PRIVACY_REQUEST_LOG.md`: request ID, received timestamp, request type, requester email, verification status, owner, status, response date, and any approved exception. Do not copy unnecessary email content or database records into the log.
 3. Acknowledge receipt without promising a legal outcome or deletion date. State that AARYX will verify identity and review the request.
+4. The directory is local-only, not tracked in Git, mode-restricted to the founder account, and must not contain access exports, database rows, credentials, or other unnecessary personal data.
 
 ## Reasonable identity verification
 
@@ -60,32 +61,33 @@ Status: Proposed operating procedure. Founder approval required before use.
 - Prefer a transaction for corrections, consent changes, and deletion. Read back the exact target after any approved change.
 - Do not change database permissions, RLS policies, schema, storage policies, or private-object access while handling a request.
 
-## Proposed response targets
+## Founder-approved response targets
 
-These are proposed service targets, not approved commitments:
+The founder approved these operational targets. They remain subject to applicable legal requirements and documented exceptions:
 
 - Acknowledge intake: within 3 business days.
 - Complete a verified routine access, correction, consent-withdrawal, or deletion request: within 30 calendar days.
 - If more time, verification, or a legal decision is needed: send a status update within the initial 30-day window and escalate to the founder.
 
-## Proposed retention schedule
+## Founder-approved retention schedule
 
-These periods require founder approval before adoption or publication:
+The founder approved these periods for the active First Look flow. No automated deletion is authorized by this approval:
 
 | Data category | Proposed retention | Proposed disposition |
 | --- | --- | --- |
-| First Look lead identity and current marketing-consent status | 24 months after last guide request or meaningful interaction | Delete after approved review, unless a documented exception applies. |
-| Guide-request history, selected pattern/guide, source path, timestamps, and delivery status | 24 months after request | Delete with the approved lead deletion workflow. |
-| Consent-history events | 24 months after consent withdrawal or last interaction | Delete with the approved lead deletion workflow, unless retained for a documented legal/business reason. |
+| First Look lead identity and current marketing-consent status | 24 months after last interaction or withdrawal | Delete after approved review, unless a documented exception applies. |
+| Guide-request history, selected pattern/guide, source path, timestamps, and delivery status | 24 months after last interaction or withdrawal | Delete with the approved lead deletion workflow. |
+| Consent-history events | 24 months after last interaction or withdrawal | Delete with the approved lead deletion workflow, unless retained for a documented legal/business reason. |
 | IP-derived abuse-prevention hash and rate-limit records | 90 days after request | Delete with the related guide-request record or earlier through an approved retention process. |
 | Transactional delivery-provider metadata and errors | 90 days after final delivery outcome | Delete with the related guide-request record or earlier through an approved retention process. |
-| Security, legal-hold, or dispute records | Duration required for the documented purpose | Founder/legal decision required before deletion. |
+| Security, dispute, legal-hold, tax, or contractual records | Duration required by the documented applicable requirement | Founder authorization and any applicable requirement govern deletion. |
 | Preserved legacy Blueprint records | No new schedule in this runbook | Founder decision required separately. |
 
-## Founder decisions still required
+## Founder approvals recorded
 
-1. Approve, revise, or reject the response targets and retention schedule.
-2. Decide whether legal review is required before publishing or relying on these procedures.
-3. Approve the exact minimal request-log location and access controls.
-4. Decide who, if anyone beyond the founder, may execute approved privileged database actions.
-5. Define any legal-hold, tax, contract, or dispute-retention exceptions.
+1. Tejas Desai is the privacy-request owner and the only required approver for each privileged database action.
+2. `aaryxaiteam@gmail.com` is the official intake mailbox.
+3. The response targets and retention schedule above are approved for launch operations.
+4. The founder accepts this documented privacy operating posture for launch without claiming legal certification.
+5. Preserved legacy Blueprint records remain outside this schedule and require a separate founder decision.
+6. Hermes may prepare instructions and drafts only. It must not autonomously delete data, withdraw consent, change permissions, or make legal decisions.
