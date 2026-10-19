@@ -1,0 +1,268 @@
+[
+  {
+    "name": "01-home-desktop",
+    "path": "/",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "assets/tejas-headshot1.jpg",
+        "w": 1536,
+        "h": 1023,
+        "ok": true
+      },
+      {
+        "src": "assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "assets/first-fix-guides/AARYX_First-Fix_Guide_01_The_Handoff_Fix_Guide_thumbnail.png",
+        "w": 400,
+        "h": 518,
+        "ok": true
+      }
+    ],
+    "founder": {
+      "src": "assets/tejas-headshot1.jpg",
+      "w": 1536,
+      "h": 1023,
+      "display": "inline"
+    }
+  },
+  {
+    "name": "02-founder-desktop",
+    "path": "/",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "assets/tejas-headshot1.jpg",
+        "w": 1536,
+        "h": 1023,
+        "ok": true
+      },
+      {
+        "src": "assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "assets/first-fix-guides/AARYX_First-Fix_Guide_01_The_Handoff_Fix_Guide_thumbnail.png",
+        "w": 400,
+        "h": 518,
+        "ok": true
+      }
+    ],
+    "founder": {
+      "src": "assets/tejas-headshot1.jpg",
+      "w": 1536,
+      "h": 1023,
+      "display": "inline"
+    }
+  },
+  {
+    "name": "03-service-desktop",
+    "path": "/ai-consulting-services.html",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "/assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "/assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      }
+    ],
+    "founder": null
+  },
+  {
+    "name": "04-blueprint-desktop",
+    "path": "/blueprint/",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "../assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "../assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      }
+    ],
+    "founder": null
+  },
+  {
+    "name": "05-privacy-desktop",
+    "path": "/privacy.html",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "/assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "/assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      }
+    ],
+    "founder": null
+  },
+  {
+    "name": "06-home-mobile",
+    "path": "/",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "assets/tejas-headshot1.jpg",
+        "w": 1536,
+        "h": 1023,
+        "ok": true
+      },
+      {
+        "src": "assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "assets/first-fix-guides/AARYX_First-Fix_Guide_01_The_Handoff_Fix_Guide_thumbnail.png",
+        "w": 400,
+        "h": 518,
+        "ok": true
+      }
+    ],
+    "founder": {
+      "src": "assets/tejas-headshot1.jpg",
+      "w": 1536,
+      "h": 1023,
+      "display": "inline"
+    }
+  },
+  {
+    "name": "07-founder-mobile",
+    "path": "/",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "assets/tejas-headshot1.jpg",
+        "w": 1536,
+        "h": 1023,
+        "ok": true
+      },
+      {
+        "src": "assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "assets/first-fix-guides/AARYX_First-Fix_Guide_01_The_Handoff_Fix_Guide_thumbnail.png",
+        "w": 400,
+        "h": 518,
+        "ok": true
+      }
+    ],
+    "founder": {
+      "src": "assets/tejas-headshot1.jpg",
+      "w": 1536,
+      "h": 1023,
+      "display": "inline"
+    }
+  },
+  {
+    "name": "08-service-mobile",
+    "path": "/ai-consulting-services.html",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "/assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "/assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      }
+    ],
+    "founder": null
+  },
+  {
+    "name": "09-blueprint-mobile",
+    "path": "/blueprint/",
+    "status": 200,
+    "overflow": false,
+    "errors": [],
+    "logos": [
+      {
+        "src": "../assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      },
+      {
+        "src": "../assets/aaryxai_horizontal_dark.svg",
+        "w": 1184,
+        "h": 277,
+        "ok": true
+      }
+    ],
+    "founder": null
+  }
+]

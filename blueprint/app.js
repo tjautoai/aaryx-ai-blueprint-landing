@@ -81,7 +81,7 @@ function renderProgress() {
     <section class="blueprint-progress-shell">
       <div>
         <p class="eyebrow blueprint-eyebrow">AARYX Blueprint Assessment</p>
-        <h1 class="blueprint-title">A premium diagnostic for follow-through risk.</h1>
+        <h2 class="blueprint-title">A premium diagnostic for follow-through risk.</h2>
         <p class="blueprint-subtitle">Built for founder-led service businesses with real workflow complexity. This is a fit assessment, not a generic AI quiz.</p>
       </div>
       <div class="blueprint-progress-meta">
@@ -155,7 +155,14 @@ async function submitBlueprintPayload(payload) {
   });
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    const error = new Error('Blueprint persistence failed. Please try again.');
+    error.retryable = response.status >= 500 || response.status === 0;
+    throw error;
+  }
   if (!response.ok || !data?.ok) {
     const details = Array.isArray(data?.details) ? ` ${data.details.join(' ')}` : '';
     const message = data?.error || 'Blueprint persistence failed.';
